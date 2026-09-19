@@ -1,0 +1,64 @@
+               __                 .___                 .___.__  .__               
+  ______ _____/  |_  _____      __| _/____ _____     __| _/|  | |__| ____   ____  
+ /  ___// __ \   __\ \__  \    / __ |/ __ \\__  \   / __ | |  | |  |/    \_/ __ \ 
+ \___ \\  ___/|  |    / __ \_ / /_/ \  ___/ / __ \_/ /_/ | |  |_|  |   |  \  ___/ 
+/____  >\___  >__|   (____  / \____ |\___  >____  /\____ | |____/__|___|  /\___  >
+     \/     \/            \/       \/    \/     \/      \/              \/     \/ 
+
+
+// set a deadline for project milestones / mvp
+
+--- todo
+
+( ) implement i64-only variables
+
+-- learning
+
+( ) RAM paging
+	( ) why is ram paged?
+	( ) how is ram paged?
+
+( ) how does virtual memory address vs physical address work?
+
+( ) cache
+	( ) cache invalidation
+	( ) cache lines
+
+( ) %rsp
+	( ) is it actually general purpose or specific purpose?
+	( ) what types of specific-purpose registers exist out there?
+	( ) what types of general purpose registers exist out there?
+
+( ) FS vs OS
+	( ) how does communication look like of OS with filesystem?
+	( ) HDD vs SSD?
+	( ) windows vs apple vs linux?
+	( ) swap mechanism?
+	( ) speed NVMe & others?
+	( ) hardware-level communication (is there a memory bus)?
+	( ) buffering mechanism on hdd. single-block-write.
+	( ) transactionality
+	( ) underlying data structure
+
+--- everything else
+
+no easy markdown preview in helix editor.
+
+no easy default setup -> had to look up how to set cpp version, look up diff between clang and gcc++. mismatch between lsp version and gcc version configured. pretty bad. had to look up project configuration from my old, unrelated project for compiler flags. pretty bad DX. easy desync between .clangd vs CPP_FLAGS in makefile. not great DX either.
+
+documentation, particularly build step easily can and will mismatch the project build setup in makefile. easy desync.
+
+should this language be for good devs or for people with skill issues? maybe just 4myself
+
+it is not obvious to me why the entrypoint to the program is called "main". is there a side program? other ideas: begin. start. init. entrypoint. entry. launch. initiate. main. say.
+
+todo-like function in the language itself. finding not implemented edge cases can be hard in jira tickets / elsewhere.
+
+--- peak c++ observations
+
+Peak reflection, unconsting the const.
+```cpp
+	const string entry_point_path = "./delight-language-program/start";
+	std::string& mutable_ref = const_cast<std::string&>(entry_point_path);
+	mutable_ref = "new/path";  // Now you can modify it
+```

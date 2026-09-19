@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-std=c++23, -I./include ,-Wall, -Wextra, -Wunused-variable, -Wpedantic, -Wshadow, -Wunused, -Wconversion, -Wsign-conversion, -Wnull-dereference, -Wdouble-promotion, -Wformat=2, -Wformat-security]
