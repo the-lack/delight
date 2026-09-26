@@ -62,3 +62,7 @@ Peak reflection, unconsting the const.
 	std::string& mutable_ref = const_cast<std::string&>(entry_point_path);
 	mutable_ref = "new/path";  // Now you can modify it
 ```
+
+explicit errors. e.g. if you have (int / int), the division operation, one int can be 0. user should be explicitly informed about such edge case. that's very important
+
+the problem with todos in general as part of syntax that syntax has limitations and cannot be called everywhere. oh man.

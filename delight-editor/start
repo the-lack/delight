@@ -1,4 +1,1 @@
-int 2 + 2;
-int a = 2 + 2;
-int b = 3 + 1;
-int c = a + b;
+something = add 2 2
