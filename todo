@@ -11,6 +11,7 @@
 --- todo
 
 ( ) implement i64-only variables
+( ) const-ify the whole code wherever possible
 
 -- learning
 
@@ -66,3 +67,7 @@ Peak reflection, unconsting the const.
 explicit errors. e.g. if you have (int / int), the division operation, one int can be 0. user should be explicitly informed about such edge case. that's very important
 
 the problem with todos in general as part of syntax that syntax has limitations and cannot be called everywhere. oh man.
+
+would be great if language was vertical-heavy by design, e.g.:
+some_variable_name        = 
+some_variable_name_longer = 
