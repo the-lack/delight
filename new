@@ -1,0 +1,288 @@
+--- What do I want?
+
+FEATURES:
+( ) INT64 (negative and positive)
+( ) FLOATING-POINT NUMBERS (the usual double representation, no float)
+( ) variable declaration w/ value
+( ) referencing variable by value
+( ) no duplicate variable names
+( ) variable reassignment
+( ) post-incrementation
+( ) post-decrementation
+( ) pre-decrementation
+( ) pre-incrementation
+( ) number (float & int) addition
+( ) number (float & int) multiplication
+( ) number (float & int) substraction
+( ) number (float & int) division
+( ) printing strings
+( ) strings (no escape sequences)
+( ) string literals (embedding variables w/ {})
+( ) int to string conversion
+( ) float to string conversion
+
+algo:
+we iterate over each character (probably necessary? could have vertical grammar)
+we have some sort of CLUSTER:
+
+we get character - push character to the cluster
+
+is character a even valid by itself (ASCII)
+
+if(currentcharacter = space) then flush token
+
+if(character is not valid at all) error
+else: push to cluster
+
+if(cluster a keyword) { classification = keyword, continue; }
+
+predicate_list = [p1, p2]
+if(meets single predicate) { classify as what predicate predicts eg. variable, continue }
+
+// probably won't happen
+// if(meets multiple predicates) { error (?) }
+
+if(meets multiple predicates)
+
+
+edge case: what happens with these:
+
+2 -> 21 -> 213 -> 2137 -> 2137. -> 2137.0 OR 2137.<space here>
+
+" -> "s -> "st -> "str -> "str" OR "str<space here and no stirng end>
+
+i think the best conceptualization might be:
+
+every thing has start and an end
+
+const keyword_list = [ "spaced keyword" ]
+
+       |            
+<spaced keyword>
+
+the moment i get to space i should check if any keyword matches the word, then check if any
+
+i guess i could have list of all keywords and just go over them, as long as current cluster overlaps with keyword i keep continuing.
+
+keywords shall have the top priority (there's the thing where i could possibly have something that is keyword in certain places and not others but let's skip this for now i guess, e.g. based on scope)
+
+if you finish iterating and keyword doesn't overlap, you should go back probably, follow any other non-keyword execution path (identifier, other scalar, some other constant, whatever) and do the same thing for next character
+
+so given "spaced keyword" and input being: "something = spaced keyword"
+we will classify spaced keyword as one single thing
+
+we will classify spaced keyword as one single thing
+
+on the other hand if we'll have "something = spaced keywordd"
+we probably should fail.
+
+thats so annoying
+
+there's also if we had "loop me" keyword a problem of
+"loop me(expression)" where ( serves as delimiter.
+
+this is a huge rabbit hole
+
+Concept of "delimiting" stuff vs "hard-boundary stuff"
++=, ++, -=, =, +
+
+Also there could be idea that is like:
+this could be generally built in stuff, not just keywords, you could say += is some sort of keyword
+keywords =
+[
+{
+keyword: "try this thing"
+delimit_start: [" ", ")", ";", "}", "\n", "\r", None] // delimiter might need to be none which has to mean, not that it's "NULL" but that it's "", so that the keyword can be used on new line or file beginning
+delimit_end: [" ", ")", ";", "}", "\n", "\r"]
+}
+,
+{
+keyword: "catch this error"
+delimit_start: [" ", ")", ";", "}", "\n", "\r"]
+delimit_end: [" ", ")", ";", "}", "\n", "\r"]
+}
+,
+{
+keyword: "for"
+delimit_start: [" ", ")", ";", "}", "\n", "\r"]
+delimit_end: [" "] // always force the for to have a space
+}
+,
+{
+keyword: "loop" // this keyword is important regardless of placement, e.g. could exist in variable name and takes precedence `my_loop` identifier will cause loop to work, very flexible
+delimit_start: NULL 
+delimit_end: NULL
+},
+{
+keyword: "+=" // again, any placement, this guy takes precedence, even mid-identifier
+delimit_start: NULL 
+delimit_end: NULL
+}
+]
+
+
+scalars =
+[
+{
+kind: Identifier
+predicate: bool (lexeme) => {
+	if(isAlphabetic) return true
+	else return false
+ }
+delimit_start: // 
+delimit_end: //
+}
+,
+{
+kind: IntegerLiteral
+predicate: bool (lexeme) => {
+	if(isNumeric) return true
+	else return false
+ }
+delimit_start: // 
+delimit_end: //
+},
+
+{
+kind: FloatLiteral
+predicate: bool (lexeme) => {
+	if(isNumeric && hasDotInTheMiddle && dotIsFolloedByAtLeastOneNumericSomething) return (matches: true, could_be_expnaded: true) // IMPLEMENT this for all scalars
+	else return ( matches: false )
+}
+partial_predicate: bool (lexeme) => {
+	if(isNumeric || (isNumeric&& hasDotInTheMiddle)) return true
+	else return false
+ }
+delimit_start: // 
+delimit_end: //
+}
+]
+
+--- How to handle strings?
+
+--- hot loop
+
+int stream_index = 0;
+char current_character  = character_stream[stream_index];
+char next_character = character_stream[stream_index + 1]; // HANDLE EDGE CASE WITH STREAM LENGTH
+
+
+string current_buffer = "";
+
+vec<Tokne> tokens_found = {};
+
+current_keyword_candidates = []
+
+// this will do ")for("" and " for " and ")for " - all combos, bit expensive but that's fine w/ me
+// each combo has keyword assigned, we have to make sure (ASSERTION on program init) that single combo
+// doesn't have 2 same values with different keywords (e.g. "oop" with prefix "l" meaning "loop" and separate keyword "loop")
+combinations_of_all_keywords_with_their_prefixes_and_postfixes_combined = list_of_keywords.get_all_start_delimiters_with_matching_classifications()
+# combinations_of_all_scalars_with_their_prefixes_and_postfixes_combined = list_of_keywords.get_all_start_delimiters_with_matching_classifications()
+
+lex_mode = NOT_IN_A_MIDDLE_OF_ANYTHING | WE_NEED_TO_EXPAND_CURRENT_SCALAR | WE_HAVE_VALID_SCALAR_BUT_WE_WANNA_MAX_MUNCH | // we could have WE_HAVE_A_VALID_SCALAR but that'd be unnecessary
+
+current_scalars_full_match_and_cant_be_expanded = []
+current_scalars_match_but_could_be_expanded = []
+current_scalars_partial_match = []
+
+while(true){
+	// could be redundant but nice to be explicit early on, later the expansion will validate chracters anywa
+	// STEP: validate character contex-free
+	is_character_valid = list_of_valid_character.contains(current_character);
+	if(!is_character_valid) error() & break;
+
+	// STEP: are we interacting with keywordinho
+	// "" is default, file didn't start yet
+
+
+	for(token in combinations_of_all_keywords_with_their_prefixes_and_postfixes_combined) {
+		offset = token.postfix_and_prefix_included_length - 1 // this includes postfix
+		previous_character_index_if_such_existed = stream_index == 0 ? stream_index : stream_index - 1; // the problem
+		if((previous_character_index_if_such_existed until stream_index + offset) == token.full_string_representation_with_post_and_prefix) {
+			tokens_found.push(Token{ .value = token.core_representation_without_post_and_prefix, .kind = token.kind })
+			stream_index = token.core_representation.length - 1; // well, what do we do about the prefix, we kinda ignored it, could've been previous expression if not file start
+			// thats sus a bit tbh. i guess the prefix should've been processed by now
+			// thats why we should start from stream_index - 1 which probably will cause
+			// issues or errors if we are on index 0 exactly;
+			// with this is that we don't know if the combo had or didn't have the prefix required. yeah.
+			// but in the end of the day there's "" thing i guess, we'll also check the keyword on next iteration.
+			// this might mean tho that we could accidentally start classifying current thing as identifier.
+			// but this isn't exactly true i guess, if there's 'sfor' and 'for' doesn't have declared 's' as prefix (and it shouldn't)
+			// then there won't be an issue, it seems, haha;
+			// unless indeed there's a conflict that causes this actually - 99% chance this won't happen but it 100% could
+			// not sure how valuable the prefix idea is then at that point. (?)
+			// - are there any false positives with this approach we have here?
+            // - how to prevent a case where there's a keyword { .prefix = ["s" /* doesnt include space nor emptiness */, value: "for", postfixes = ""]  }
+			//                            
+			//        case above requires already parsed & analyzed previous character, this mean when we encounter something like S and have no keywords for it
+			//        then we push it to the current_lexeme_buffer, validate if the buffer matches any scalar predicate OR partial scalar predicate
+			//        on top of that we need to match if it's expandable according to the scalar. there are couple types of things:
+			//           - ALLOWS_EXPANDING YET COMPLETE SCALAR
+			//           - DOES_NOT_ALLOW_EXPANDING YET COMPLETE SCALAR (it could be variable that reached max length for instance / although not necessarily cuz we might want to still expand ->
+			//                                          the scalar and just after classifying fully as variable then later yell to user about it's length, that's way too complex tho for now)
+			//           - PARTIAL SCALAR THAT NEEDS EXPANDING
+            //
+			// TODO: handle this edge case
+			//
+			// if()
+
+			continue; // here;
+		}
+
+		current_buffer += current_character;
+		
+		current_scalars_full_match_and_cant_be_expanded = our_scalars_or_whatever.getThoseThatMatch(current_buffer)
+		current_scalars_match_but_could_be_expanded = our_scalars_or_whatever.getThoseThatMatchAndCouldBeExpandedFurther(current_buffer)
+		current_partial_scalars_match = our_scalars_or_whatever.getThoseThatPartialMatch(current_buffer)
+
+		// handle full match unexpandable
+			assert_that(current_scalars_full_match_and_cant_be_expanded.length == 1) // cant have multiple scalars that match, there 100% needs to be comptime assertion of that1
+			scalar_that_matches = current_scalars_full_match_and_cant_be_expanded[0]
+			// TODO: make sure no random index issues e.g. going beyond stream length of before it
+			our_prefix_before_buffer = character_stream[stream_index - current_buffer.length] //<space here>var, if R == index 100 we do 100 - 3 = 97
+			 TODO // do a check on scalar prefixes LENGTH, that's very important 
+			scalar_that_matches.prefixes.contain(our_prefix_before_buffer)
+
+			our_postfix_before_buffer = character_stream[current_buffer.length + 1] //<space here>var, if R == index 100 we do 100 - 3 = 97
+			// TODO: make sure no random index issues e.g. going beyond stream length of before it
+			// TODO // do a check on scalar postfixes LENGTH, that's very important, might not be single char, might require more than that
+			scalar_that_matches.postfixes.contain(our_postfix_before_buffer
+
+			if(our_thing_matches_postfix_and_prefix_args_for_a_full_match) {
+				tokens_found.push(Token{ .value = current_buffer, .kind = scalar_that_matches.kind })
+
+				current_scalars_full_match_and_cant_be_expanded = []
+				current_scalars_match_but_could_be_expanded = []
+				current_scalars_partial_match = []
+
+				TODO: possibly cleanup other state
+				continue;
+			}
+
+		// handle good match that can be expanded
+		for(scalar in current_scalars_match_but_could_be_expanded) {
+			
+		}
+
+
+		current_scalars_full_match_and_cant_be_expanded = []
+		current_scalars_match_but_could_be_expanded = []
+		current_scalars_partial_match = []		
+	}
+
+	
+
+	if()
+	# if() {
+		# current_buffer += current_character;
+		# list_of_keywords = list_of_keywords.get_all_keywords()
+	# }
+
+
+
+	
+
+
+	// handle EOF
+
+}

@@ -7,10 +7,19 @@
 
 
 // set a deadline for project milestones / mvp
+--- mvp
+
+( ) implement ui64-only variables
+( ) addition (+)
+( ) substraction (-)
+( ) variables
+	( ) assignment
+	( ) immutable
+	( ) reference
+	( ) noduplication
+
 
 --- todo
-
-( ) implement i64-only variables
 ( ) const-ify the whole code wherever possible
 
 -- learning
