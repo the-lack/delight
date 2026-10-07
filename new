@@ -88,10 +88,24 @@ Concept of "delimiting" stuff vs "hard-boundary stuff"
 
 Also there could be idea that is like:
 this could be generally built in stuff, not just keywords, you could say += is some sort of keyword
+// TODO: there's this problem where you might want the keyword to also be slightly dynamic
+		 such as dynamic space length/size between "<keyword1><N amount of space><keyword2>"
 keywords =
 [
 {
 keyword: "try this thing"
+// return partial | success | fail, ik implementation is half assed
+predicate: (string some_string) => {
+	predicate_status = fail;
+
+	if(broke_on_spaces == ["try"]) predicate_status = partial
+
+	no_spaces = some_string.removeAllSpaces() // also can be \n depending on the rules etc.
+
+	if(no_spaces == "trythisthing") predicate_status = success
+
+	
+}
 delimit_start: [" ", ")", ";", "}", "\n", "\r", None] // delimiter might need to be none which has to mean, not that it's "NULL" but that it's "", so that the keyword can be used on new line or file beginning
 delimit_end: [" ", ")", ";", "}", "\n", "\r"]
 }
@@ -185,6 +199,9 @@ current_scalars_full_match_and_cant_be_expanded = []
 current_scalars_match_but_could_be_expanded = []
 current_scalars_partial_match = []
 
+previous_scalars_match_but_could_be_expanded = []
+previous_scalars_partial_match = []
+
 while(true){
 	// could be redundant but nice to be explicit early on, later the expansion will validate chracters anywa
 	// STEP: validate character contex-free
@@ -193,7 +210,6 @@ while(true){
 
 	// STEP: are we interacting with keywordinho
 	// "" is default, file didn't start yet
-
 
 	for(token in combinations_of_all_keywords_with_their_prefixes_and_postfixes_combined) {
 		offset = token.postfix_and_prefix_included_length - 1 // this includes postfix
@@ -260,10 +276,31 @@ while(true){
 			}
 
 		// handle good match that can be expanded
-		for(scalar in current_scalars_match_but_could_be_expanded) {
-			
+				// drop the array, assume that there can be at best 1 scalar
+				// for(scalar in current_scalars_match_but_could_be_expanded) {
+				// scalars_that_dropped_after_adding_current_char =
+				//	 current_scalars_match_but_could_be_expanded.diff(previous_scalars_match_but_could_be_expanded);
+				// }
+		assert_that(current_scalars_match_but_could_be_expanded.length == 1)
+		our_scalar = current_scalars_match_but_could_be_expanded.length[0]
+		next_char = character_stream[stream_index + 1].or('')
+		prefix_char = character_stream[stream_index - current_buffer.length].or('')
+
+		// TODO: we can just make char-level boundaries for now i think
+		// doesn't need to be a string support
+		if(our_scalar.postfixes.do_not_contain(next_char) || our_scalar.prefixes.do_not_contain(prefix_char)) { 
+			throw "keyword {our_scalar.value} does not support your prefix or postfix, list of supported: {}"
 		}
 
+		// kinda redundant but very explicit
+		if(our_scalar.postfixes.contain(next_char) && our_scalar.prefixes.contain(prefix_char)) {
+			// we should handle our scalar flush here or maybe not.
+			// how can we know that scalar is not expandable anymore
+		}		
+		
+
+		previous_scalars_match_but_could_be_expanded.by_value = current_scalars_match_but_could_be_expanded.by_value
+		current_scalars_match_but_could_be_expanded = { } 
 
 		current_scalars_full_match_and_cant_be_expanded = []
 		current_scalars_match_but_could_be_expanded = []
