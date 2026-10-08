@@ -74,11 +74,11 @@ bool is_ascii_letter(char character) {
   char inclusive_uppercase_ascii_start = 'A';
   char inclusive_uppercase_ascii_end = 'Z';
 
-  bool is_lowercase_letter = (character > inclusive_lowercase_ascii_start) &&
-                             (character < inclusive_lowercase_ascii_end);
+  bool is_lowercase_letter = (character >= inclusive_lowercase_ascii_start) &&
+                             (character <= inclusive_lowercase_ascii_end);
 
-  bool is_uppercase_letter = (character > inclusive_uppercase_ascii_start) &&
-                             (character < inclusive_uppercase_ascii_end);
+  bool is_uppercase_letter = (character >= inclusive_uppercase_ascii_start) &&
+                             (character <= inclusive_uppercase_ascii_end);
 
   if (is_uppercase_letter || is_lowercase_letter) {
     return true;
