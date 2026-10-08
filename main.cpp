@@ -34,7 +34,15 @@ enum class TokenKind {
   Identifier,
   IntegerLiteral,
   EqualLiteral,
-  StatementEnding
+  StatementEnding,
+  Addition,
+  Assignment,
+};
+
+enum class TokenPredicateResult {
+  Fail = -1,
+  Partial = 1,
+  Success = 0,
 };
 
 struct Token {
@@ -44,6 +52,165 @@ struct Token {
   // TODO: could use an offset with a file name id e.g. start_index, end_index
   string value = {};
 };
+
+struct TokenDefinition {
+  TokenKind kind = TokenKind::None;
+  TokenPredicateResult (*predicate)(string current_buffer,
+                                    string everything_before,
+                                    string everything_after);
+};
+
+char get_char_or_negative_one_if_no_char(string &str, size_t index) {
+  if (index >= str.size()) {
+    return -1;
+  }
+  return str[index];
+}
+
+bool is_ascii_letter(char character) {
+  char inclusive_lowercase_ascii_start = 'a';
+  char inclusive_lowercase_ascii_end = 'z';
+
+  char inclusive_uppercase_ascii_start = 'A';
+  char inclusive_uppercase_ascii_end = 'Z';
+
+  bool is_lowercase_letter = (character > inclusive_lowercase_ascii_start) &&
+                             (character < inclusive_lowercase_ascii_end);
+
+  bool is_uppercase_letter = (character > inclusive_uppercase_ascii_start) &&
+                             (character < inclusive_uppercase_ascii_end);
+
+  if (is_uppercase_letter || is_lowercase_letter) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+// identifier validation
+bool is_valid_identifier_raw(string &identifier_candidate) {
+  bool is_valid = true;
+
+  for (size_t index = 0; index >= 0; --index) {
+    bool is_underscore = index == '_';
+
+    if (!is_ascii_letter(identifier_candidate[index]) && !is_underscore) {
+      is_valid = false;
+      break;
+    }
+  }
+
+  return is_valid;
+}
+
+bool is_valid_identifier_prefix(
+    string &everything_before_first_identifier_character) {
+  char prefix_character = get_char_or_negative_one_if_no_char(
+      everything_before_first_identifier_character,
+      everything_before_first_identifier_character.length() - 1);
+
+  if (prefix_character != ' ')
+    return false;
+
+  return true;
+}
+
+bool (*is_valid_identifier_postfix)(string &) = is_valid_identifier_prefix;
+
+
+// addition validation
+bool is_valid_addition_raw(string &addition_candidate) {
+  if(addition_candidate != "+") return false;
+
+  return true;
+}
+
+bool is_valid_addition_prefix(
+    string &everything_before_first_identifier_character) {
+  char prefix_character = get_char_or_negative_one_if_no_char(
+      everything_before_first_identifier_character,
+      everything_before_first_identifier_character.length() - 1);
+
+  if (prefix_character != ' ')
+    return false;
+
+  return true;
+}
+
+bool (*is_valid_addition_postfix)(string &) = is_valid_addition_prefix;
+
+
+// assignment validation
+bool is_valid_assignment_raw(string &assignment_candidate) {
+  if(assignment_candidate != "=") return false;
+
+  return true;
+}
+
+bool is_valid_assignment_prefix(
+    string &everything_before_first_identifier_character) {
+  char prefix_character = get_char_or_negative_one_if_no_char(
+      everything_before_first_identifier_character,
+      everything_before_first_identifier_character.length() - 1);
+
+  if (prefix_character != ' ')
+    return false;
+
+  return true;
+}
+
+bool (*is_valid_assignment_postfix)(string &) = is_valid_assignment_prefix;
+
+
+
+
+std::vector<TokenDefinition> token_definitions = {
+  TokenDefinition{
+    .kind = TokenKind::Identifier,
+    .predicate = [](string token_candidate, string everything_before,
+                    string everything_after) {
+      auto result = TokenPredicateResult::Success;
+
+      if (!is_valid_identifier_raw(token_candidate) ||
+          !is_valid_identifier_prefix(everything_before) ||
+          !is_valid_identifier_postfix(everything_after)) {
+        result = TokenPredicateResult::Fail;
+      }
+
+      return result;
+    }},
+
+  TokenDefinition{
+    .kind = TokenKind::Addition,
+    .predicate = [](string token_candidate, string everything_before,
+                    string everything_after) {
+      auto result = TokenPredicateResult::Success;
+
+      if (!is_valid_addition_raw(token_candidate) ||
+          !is_valid_identifier_prefix(everything_before) ||
+          !is_valid_addition_postfix(everything_after)) {
+        result = TokenPredicateResult::Fail;
+      }
+
+      return result;
+    }},
+
+  TokenDefinition{
+    .kind = TokenKind::Assignment,
+    .predicate = [](string token_candidate, string everything_before,
+                    string everything_after) {
+      auto result = TokenPredicateResult::Success;
+
+      if (!is_valid_assignment_raw(token_candidate) ||
+          !is_valid_assignment_prefix(everything_before) ||
+          !is_valid_assignment_postfix(everything_after)) {
+        result = TokenPredicateResult::Fail;
+      }
+
+      return result;
+    }}    
+
+  };
 
 // TODO: could implement formatter for the token kind or
 // create self-encapsulated class for Token with print/to_string capabilities or
@@ -155,9 +322,9 @@ std::vector<char> all_legal_characters = []() {
 //
 // What you usually have:
 // - empty token "", new character
-// 
+//
 // - some token, new character
-// 
+//
 
 struct ExpandTokenData {
   bool could_be_extended;
@@ -171,15 +338,15 @@ struct ExpandTokenData {
 //
 // types of tokens:
 // - scalar tokens meeting predicates
-//      - integer literal meeting is_digit_predicate, 
+//      - integer literal meeting is_digit_predicate,
 //      - identifier literal meeting is_identifier_predicate,
-// 
+//
 // - fixed value tokens of length 1 (chars)
 //      - operators +, -, *,
 //
 // - fixed value tokens of length >1
-//      - operators +=, --, ++, == 
-// 
+//      - operators +=, --, ++, ==
+//
 // - fixed value tokens - keywords
 //
 //
@@ -192,32 +359,31 @@ struct ExpandTokenData {
 // identifier = newvalue
 //
 // I guess the rule could be something like:
-// expand on something to the point you get to character that cannot be counted into current token
-// then flush the thing
-// then start from that as a new token?
+// expand on something to the point you get to character that cannot be counted
+// into current token then flush the thing then start from that as a new token?
 //
 // Where could there be a problem with this?
 // well for instance you could have something like ascii-only identifiers
-// then you have keyword that has non-ascii thing like LIST-ME (with - that isn't supported amongst identifiers)
+// then you have keyword that has non-ascii thing like LIST-ME (with - that
+// isn't supported amongst identifiers)
 //
-// the edge case where it breaks would be a case where someone tries to use this as identifier because
-// you then have [list] - identifier [-] unsupported/minus operator [me] identifier
-// what role does the \n play?
-// what role does the ; play?
-// 
+// the edge case where it breaks would be a case where someone tries to use this
+// as identifier because you then have [list] - identifier [-] unsupported/minus
+// operator [me] identifier what role does the \n play? what role does the ;
+// play?
+//
 void expand_token(TokenKind kind, char new_character) {
   using namespace std::ranges;
 
-  bool is_character_invalid =
-      !contains(all_legal_characters, new_character);
+  bool is_character_invalid = !contains(all_legal_characters, new_character);
   if (is_character_invalid) {
-    std::println(stderr, "failure, invalid_character_found {}", character);
+    // std::println(stderr, "failure, invalid_character_found {}", character);
     std::exit(EXIT_FAILURE);
-  }  
+  }
 
   switch (kind) {
   case TokenKind::None: {
-    }
+  }
   }
   // switch(current_token) {
   // case "aha": {
@@ -235,8 +401,9 @@ void classify_token(string current_character_cluster, char new_character) {
 // auto current_cluster = "";
 //
 // for(auto current_character: characters) {
-//      auto (new_classification, is_in_final_form_and_cannot_be_expanded, // kinda doesnt matter if final form because next character can be invalid expansion KEYWORDa some char hanging off
-//      should_error, error_message)
+//      auto (new_classification, is_in_final_form_and_cannot_be_expanded, //
+//      kinda doesnt matter if final form because next character can be invalid
+//      expansion KEYWORDa some char hanging off should_error, error_message)
 //              expand_token(current_classification, current_character);
 // if(should_error) {
 //      std::println("{}", error_message);
@@ -266,7 +433,7 @@ void classify_token(string current_character_cluster, char new_character) {
 //
 // what will the language have, features of the language?
 // scope expansion makes sense to enforce universality and prevent reiterations
-// 
+//
 // - [ ] INT64 (negative and positive)
 // - [ ] FLOATING-POINT NUMBERS (the usual double representation, no float)
 // - [ ] variable declaration w/ value
@@ -289,9 +456,11 @@ void classify_token(string current_character_cluster, char new_character) {
 //
 //
 // decouple everything from everything:
-// - labeling something as identifier and then modifying this to call it a keyword is goofy, maybe faster but coupled (assumes that the keyword and identifiers come from the same subset which doesn't have to be true)
+// - labeling something as identifier and then modifying this to call it a
+// keyword is goofy, maybe faster but coupled (assumes that the keyword and
+// identifiers come from the same subset which doesn't have to be true)
 //
-// 
+//
 
 int main() {
   std::println("start");
@@ -321,286 +490,6 @@ int main() {
   entrypoint_file_stream.close();
 
   // tokenize
-  std::vector<Token> found_character_clusters = {};
-
-  std::println("all_legal_characters: {}", all_legal_characters);
-
-  string current_character_cluster = {};
-  TokenKind current_cluster_classification = TokenKind::None;
-  for (char character : file_vector) {
-
-    bool this_is_a_new_cluster = current_character_cluster == std::string{};
-
-    // SECTION: handle invalid character
-    // bool is_character_invalid =
-    //     !std::ranges::contains(all_legal_characters, character);
-    // if (is_character_invalid) {
-    //   std::println(stderr, "failure, invalid_character_found {}", character);
-    //   std::exit(EXIT_FAILURE);
-    // }
-
-    // SECTION: handle statement ending operator
-    bool
-        new_unidentified_cluster_and_character_meets_statement_ending_criteria =
-            this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::None &&
-            character == ';';
-    if (new_unidentified_cluster_and_character_meets_statement_ending_criteria) {
-      current_character_cluster += character;
-      current_cluster_classification = TokenKind::StatementEnding;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_statement_ending_and_current_character_is_space_or_newline =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::StatementEnding &&
-            (std::ranges::contains(space, character) ||
-             std::ranges::contains(new_lines, character));
-    if (ongoing_cluster_identified_as_statement_ending_and_current_character_is_space_or_newline) {
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::None;
-      current_character_cluster = {};
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_statement_ending_and_current_character_is_also_a_statement_ending =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::StatementEnding &&
-            character == ';';
-    if (ongoing_cluster_identified_as_statement_ending_and_current_character_is_also_a_statement_ending) {
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::StatementEnding;
-      current_character_cluster = {};
-      current_character_cluster += character;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_something_different_than_statement_ending_or_none_and_current_character_is_statement_ending =
-            !this_is_a_new_cluster &&
-            current_cluster_classification != TokenKind::StatementEnding &&
-            current_cluster_classification != TokenKind::None &&
-            character == ';';
-    if (ongoing_cluster_identified_as_something_different_than_statement_ending_or_none_and_current_character_is_statement_ending) {
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::StatementEnding;
-      current_character_cluster = {};
-      current_character_cluster += character;
-      continue;
-    }
-
-    // SECTION: handle identifier (variable name)
-    bool new_unidentified_cluster_and_character_meets_all_identifier_criteria =
-        this_is_a_new_cluster &&
-        current_cluster_classification == TokenKind::None &&
-        std::ranges::contains(latin_letters, character);
-    if (new_unidentified_cluster_and_character_meets_all_identifier_criteria) {
-      current_cluster_classification = TokenKind::Identifier;
-      current_character_cluster += character;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_classified_as_identifier_and_current_character_meets_all_identifier_criteria =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::Identifier &&
-            std::ranges::contains(latin_letters, character);
-    if (ongoing_cluster_classified_as_identifier_and_current_character_meets_all_identifier_criteria) {
-      current_character_cluster += character;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_classified_as_identifier_and_current_character_is_space_or_new_line_or_statement_ending =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::Identifier &&
-            (std::ranges::contains(space, character) ||
-             std::ranges::contains(new_lines, character));
-
-    if (ongoing_cluster_classified_as_identifier_and_current_character_is_space_or_new_line_or_statement_ending) {
-      // TODO: VERIFY IF IDENTIFIER IS NOT A RESERVED KEYWORD TO BE CLASSIFIED
-      // if(current_character_cluster == is a keyword )
-      // although might be worth doing this somewhere else and variable naming
-      // might have different set of rules than keywords, maybe doing this
-      // earlier would make more sense e.g. variable names shouldnt have spaces
-      // generally
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::None;
-      current_character_cluster = {};
-      continue;
-    }
-
-    bool
-        ongoing_cluster_classified_as_identifier_and_current_character_does_not_meet_identifier_criteria_and_is_not_space =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::Identifier &&
-            !std::ranges::contains(latin_letters, character) &&
-            !std::ranges::contains(space, character);
-
-    if (ongoing_cluster_classified_as_identifier_and_current_character_does_not_meet_identifier_criteria_and_is_not_space) {
-      // TODO: VERIFY IF IDENTIFIER IS NOT A RESERVED KEYWORD TO BE CLASSIFIED
-      // if(current_character_cluster == is a keyword )
-      std::println(stderr,
-                   "failure, invalid character found while classifying an "
-                   "identifier {}[{}] <- invalid character",
-                   current_character_cluster, character);
-      std::exit(EXIT_FAILURE);
-      continue;
-    }
-
-    // SECTION: handle uint64
-    bool
-        new_unidentified_cluster_and_character_meets_all_integer_literal_criteria =
-            this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::None &&
-            std::ranges::contains(digits, character);
-    if (new_unidentified_cluster_and_character_meets_all_integer_literal_criteria) {
-      current_character_cluster += character;
-      current_cluster_classification = TokenKind::IntegerLiteral;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_integer_literal_and_character_meets_all_integer_literal_criteria =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::IntegerLiteral &&
-            std::ranges::contains(digits, character);
-    if (ongoing_cluster_identified_as_integer_literal_and_character_meets_all_integer_literal_criteria) {
-      current_character_cluster += character;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_integer_literal_and_character_is_space_or_new_line =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::IntegerLiteral &&
-            (std::ranges::contains(space, character) ||
-             std::ranges::contains(new_lines, character));
-
-    if (ongoing_cluster_identified_as_integer_literal_and_character_is_space_or_new_line) {
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::None;
-      current_character_cluster = {};
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_integer_literal_and_character_doesnt_meet_all_integer_literal_criteria =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::IntegerLiteral &&
-            !std::ranges::contains(digits, character);
-    if (ongoing_cluster_identified_as_integer_literal_and_character_doesnt_meet_all_integer_literal_criteria) {
-      std::println(stderr,
-                   "failure, invalid character found while classifying integer "
-                   "literal {}[{}] <- invalid character",
-                   current_character_cluster, character);
-      std::exit(EXIT_FAILURE);
-      continue;
-    }
-
-    // SECTION: handle assignment operator
-    bool new_unidentified_cluster_and_character_meets_assignment_criteria =
-        this_is_a_new_cluster &&
-        current_cluster_classification == TokenKind::None && character == '=';
-    if (new_unidentified_cluster_and_character_meets_assignment_criteria) {
-      current_character_cluster += character;
-      current_cluster_classification = TokenKind::EqualLiteral;
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_assignment_and_character_is_space_or_newline =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::EqualLiteral &&
-            (std::ranges::contains(space, character) ||
-             std::ranges::contains(new_lines, character));
-    if (ongoing_cluster_identified_as_assignment_and_character_is_space_or_newline) {
-      found_character_clusters.push_back(Token{
-          .kind = current_cluster_classification,
-          .value = current_character_cluster,
-      });
-      current_cluster_classification = TokenKind::None;
-      current_character_cluster = {};
-      continue;
-    }
-
-    bool
-        ongoing_cluster_identified_as_assignment_and_character_is_not_space_not_new_line_meaning_weird_continuation =
-            !this_is_a_new_cluster &&
-            current_cluster_classification == TokenKind::EqualLiteral &&
-            (!std::ranges::contains(space, character) &&
-             !std::ranges::contains(new_lines, character));
-    if (ongoing_cluster_identified_as_assignment_and_character_is_not_space_not_new_line_meaning_weird_continuation) {
-      std::println(stderr,
-                   "failure, invalid character found while evaluating "
-                   "assignment operator {}[{}] <- invalid character",
-                   current_character_cluster, character);
-      std::exit(EXIT_FAILURE);
-      continue;
-    }
-    // SECTION: handle empty space
-    bool new_unidentified_cluster_and_current_character_is_space_or_new_line =
-        this_is_a_new_cluster &&
-        current_cluster_classification == TokenKind::None &&
-        (std::ranges::contains(space, character) ||
-         std::ranges::contains(new_lines, character));
-    if (new_unidentified_cluster_and_current_character_is_space_or_new_line) {
-      continue;
-    }
-
-    // SECTION: handle potentially missed edge cases
-    bool we_didnt_get_here = false;
-    std::println("DEBUG_STATE: \n - CHARACTER: {} \n - CLUSTER: {}", character,
-                 current_character_cluster);
-    ASSERT_THAT("no execution path should lead here. this means a state "
-                "invariant of sorts was not predicted",
-                we_didnt_get_here);
-  }
-
-  for (Token t : found_character_clusters) {
-    std::println(stderr, "token: ['{}' '{}']", t.value,
-                 token_kind_to_string(t.kind));
-  }
-
-  // SECTION: grammar interpretation
-  std::vector<Token> current_statement = {};
-  for (Token t : found_character_clusters) {
-
-    bool this_is_a_new_statement = current_statement.size();
-
-    if (TokenKind::IntegerLiteral == t.kind) {
-      uint64_t out_parse_int_result = 0;
-      bool this_is_uint64 = try_parse_uint_64(t.value, out_parse_int_result);
-
-      if (!this_is_uint64) {
-        std::println(
-            stderr, "non-uint64 values are not supported for integer literals");
-        std::exit(EXIT_FAILURE);
-      };
-
-      if (this_is_uint64) {
-      }
-    };
-
-    // if(this_is_a_new_statement)
-  };
 
   return 0;
 };
