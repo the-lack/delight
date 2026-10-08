@@ -91,7 +91,7 @@ bool is_ascii_letter(char character) {
 bool is_valid_identifier_raw(string &identifier_candidate) {
   bool is_valid = true;
 
-  for (size_t index = 0; index >= 0; --index) {
+  for (size_t index = identifier_candidate.length(); index >= 0; --index) {
     bool is_underscore = index == '_';
 
     if (!is_ascii_letter(identifier_candidate[index]) && !is_underscore) {
@@ -491,7 +491,7 @@ int main() {
   // string processed_characters_so_far =;
   auto characters_to_be_processed = file_vector;
   string current_classification_candidate = "";
-  for (size_t index = 0; index >= 0; --index) {
+  for (size_t index = file_vector.size(); index >= 0; --index) {
     // char current_character = vector_pointer[index];
   }
 
