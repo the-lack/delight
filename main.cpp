@@ -117,10 +117,10 @@ bool is_valid_identifier_prefix(
 
 bool (*is_valid_identifier_postfix)(string &) = is_valid_identifier_prefix;
 
-
 // addition validation
 bool is_valid_addition_raw(string &addition_candidate) {
-  if(addition_candidate != "+") return false;
+  if (addition_candidate != "+")
+    return false;
 
   return true;
 }
@@ -139,10 +139,10 @@ bool is_valid_addition_prefix(
 
 bool (*is_valid_addition_postfix)(string &) = is_valid_addition_prefix;
 
-
 // assignment validation
 bool is_valid_assignment_raw(string &assignment_candidate) {
-  if(assignment_candidate != "=") return false;
+  if (assignment_candidate != "=")
+    return false;
 
   return true;
 }
@@ -161,56 +161,53 @@ bool is_valid_assignment_prefix(
 
 bool (*is_valid_assignment_postfix)(string &) = is_valid_assignment_prefix;
 
-
-
-
 std::vector<TokenDefinition> token_definitions = {
-  TokenDefinition{
-    .kind = TokenKind::Identifier,
-    .predicate = [](string token_candidate, string everything_before,
-                    string everything_after) {
-      auto result = TokenPredicateResult::Success;
+    TokenDefinition{.kind = TokenKind::Identifier,
+                    .predicate =
+                        [](string token_candidate, string everything_before,
+                           string everything_after) {
+                          auto result = TokenPredicateResult::Success;
 
-      if (!is_valid_identifier_raw(token_candidate) ||
-          !is_valid_identifier_prefix(everything_before) ||
-          !is_valid_identifier_postfix(everything_after)) {
-        result = TokenPredicateResult::Fail;
-      }
+                          if (!is_valid_identifier_raw(token_candidate) ||
+                              !is_valid_identifier_prefix(everything_before) ||
+                              !is_valid_identifier_postfix(everything_after)) {
+                            result = TokenPredicateResult::Fail;
+                          }
 
-      return result;
-    }},
+                          return result;
+                        }},
 
-  TokenDefinition{
-    .kind = TokenKind::Addition,
-    .predicate = [](string token_candidate, string everything_before,
-                    string everything_after) {
-      auto result = TokenPredicateResult::Success;
+    TokenDefinition{.kind = TokenKind::Addition,
+                    .predicate =
+                        [](string token_candidate, string everything_before,
+                           string everything_after) {
+                          auto result = TokenPredicateResult::Success;
 
-      if (!is_valid_addition_raw(token_candidate) ||
-          !is_valid_identifier_prefix(everything_before) ||
-          !is_valid_addition_postfix(everything_after)) {
-        result = TokenPredicateResult::Fail;
-      }
+                          if (!is_valid_addition_raw(token_candidate) ||
+                              !is_valid_identifier_prefix(everything_before) ||
+                              !is_valid_addition_postfix(everything_after)) {
+                            result = TokenPredicateResult::Fail;
+                          }
 
-      return result;
-    }},
+                          return result;
+                        }},
 
-  TokenDefinition{
-    .kind = TokenKind::Assignment,
-    .predicate = [](string token_candidate, string everything_before,
-                    string everything_after) {
-      auto result = TokenPredicateResult::Success;
+    TokenDefinition{.kind = TokenKind::Assignment,
+                    .predicate =
+                        [](string token_candidate, string everything_before,
+                           string everything_after) {
+                          auto result = TokenPredicateResult::Success;
 
-      if (!is_valid_assignment_raw(token_candidate) ||
-          !is_valid_assignment_prefix(everything_before) ||
-          !is_valid_assignment_postfix(everything_after)) {
-        result = TokenPredicateResult::Fail;
-      }
+                          if (!is_valid_assignment_raw(token_candidate) ||
+                              !is_valid_assignment_prefix(everything_before) ||
+                              !is_valid_assignment_postfix(everything_after)) {
+                            result = TokenPredicateResult::Fail;
+                          }
 
-      return result;
-    }}    
+                          return result;
+                        }}
 
-  };
+};
 
 // TODO: could implement formatter for the token kind or
 // create self-encapsulated class for Token with print/to_string capabilities or
@@ -490,6 +487,13 @@ int main() {
   entrypoint_file_stream.close();
 
   // tokenize
+
+  // string processed_characters_so_far =;
+  auto characters_to_be_processed = file_vector;
+  string current_classification_candidate = "";
+  for (size_t index = 0; index >= 0; --index) {
+    // char current_character = vector_pointer[index];
+  }
 
   return 0;
 };
