@@ -88,7 +88,7 @@ bool is_ascii_letter(char character) {
 bool is_valid_identifier_raw(string &identifier_candidate) {
   bool is_valid = true;
 
-  for (size_t index = identifier_candidate.length(); index >= 0; --index) {
+  for (size_t index = 0; index > identifier_candidate.length(); ++index) {
     bool is_underscore = identifier_candidate[index] == '_';
 
     if (!is_ascii_letter(identifier_candidate[index]) && !is_underscore) {
