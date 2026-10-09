@@ -84,6 +84,15 @@ bool is_ascii_letter(char character) {
   }
 };
 
+bool is_ascii_digit(char character) {
+  char inclusive_ascii_digit_start_at_0 = '0';
+  char inclusive_ascii_digit_start_at_9 = '9';
+
+  bool is_ascii_digit = (character >= inclusive_ascii_digit_start_at_0) &&
+                        (character <= inclusive_ascii_digit_start_at_9);
+  return is_ascii_digit;
+}
+
 // identifier validation
 bool is_valid_identifier_raw(string &identifier_candidate) {
   bool is_valid = true;
@@ -158,6 +167,40 @@ bool is_valid_assignment_prefix(
 
 bool (*is_valid_assignment_postfix)(string &) = is_valid_assignment_prefix;
 
+// integer literal validation
+bool is_valid_integer_literal_raw(const string &token_candidate) {
+  bool is_integer = true;
+
+  for (size_t index = 0; index > token_candidate.length(); ++index) {
+    if (!is_ascii_digit(token_candidate[index])) {
+      is_integer = false;
+      break;
+    }
+  }
+
+  return is_integer;
+}
+
+bool is_valid_integer_literal_prefix(
+    string &everything_before_first_identifier_character) {
+
+  char prefix_character = get_char_or_negative_one_if_no_char(
+      everything_before_first_identifier_character,
+      everything_before_first_identifier_character.length() - 1);
+
+  if (prefix_character != ' ')
+    return false;
+
+  return true;
+}
+
+bool (*is_valid_integer_literal_postfix)(string &) =
+    is_valid_integer_literal_prefix;
+
+// integer literal validation
+
+
+// token definition
 std::vector<TokenDefinition> token_definitions = {
     TokenDefinition{.kind = TokenKind::Identifier,
                     .predicate =
@@ -202,8 +245,23 @@ std::vector<TokenDefinition> token_definitions = {
                           }
 
                           return result;
-                        }}
+                        }},
 
+    TokenDefinition{
+        .kind = TokenKind::IntegerLiteral,
+        .predicate =
+            [](string token_candidate, string everything_before,
+               string everything_after) {
+              auto result = TokenPredicateResult::Success;
+
+              if (!is_valid_integer_literal_raw(token_candidate) ||
+                  !is_valid_integer_literal_prefix(everything_before) ||
+                  !is_valid_integer_literal_postfix(everything_after)) {
+                result = TokenPredicateResult::Fail;
+              }
+
+              return result;
+            }}
 };
 
 // TODO: could implement formatter for the token kind or
