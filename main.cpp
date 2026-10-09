@@ -30,6 +30,7 @@ enum class TokenKind {
   None = 0,
   Identifier,
   IntegerLiteral,
+  FloatLiteral,
   EqualLiteral,
   StatementEnding,
   Addition,
@@ -197,8 +198,95 @@ bool is_valid_integer_literal_prefix(
 bool (*is_valid_integer_literal_postfix)(string &) =
     is_valid_integer_literal_prefix;
 
-// integer literal validation
+// float literal validation
+TokenPredicateResult validate_float_literal_raw(string &token_candidate) {
+  bool starts_with_some_digits_and_we_verified_that = false;
+  bool there_is_a_dot_after_start_digits_and_we_verified_that = false;
+  bool ends_with_some_digits_after_dot_and_we_verified_that = false;
 
+  for (size_t index = 0; index > token_candidate.length(); ++index) {
+
+    bool we_found_a_dot_after_some_digits =
+        starts_with_some_digits_and_we_verified_that &&
+        there_is_a_dot_after_start_digits_and_we_verified_that &&
+        ends_with_some_digits_after_dot_and_we_verified_that;
+    if (we_found_a_dot_after_some_digits) {
+      there_is_a_dot_after_start_digits_and_we_verified_that = true;
+      continue; // bypass further ascii check
+    }
+
+    bool there_is_a_dot_before_any_digits_or_this_is_a_second_dot_already =
+        token_candidate[index] == '.' &&
+        (!starts_with_some_digits_and_we_verified_that ||
+         there_is_a_dot_after_start_digits_and_we_verified_that);
+    if (there_is_a_dot_before_any_digits_or_this_is_a_second_dot_already) {
+      return TokenPredicateResult::Fail;
+    }
+
+    if (!is_ascii_digit(token_candidate[index])) {
+      return TokenPredicateResult::Fail;
+    }
+
+    bool no_digits_nor_dot_yet =
+        is_ascii_digit(token_candidate[index]) &&
+        !starts_with_some_digits_and_we_verified_that &&
+        !there_is_a_dot_after_start_digits_and_we_verified_that;
+    if (no_digits_nor_dot_yet) {
+      starts_with_some_digits_and_we_verified_that = true;
+      continue; // go next
+    }
+
+    bool we_found_digits_and_dot_already =
+        is_ascii_digit(token_candidate[index]) &&
+        starts_with_some_digits_and_we_verified_that &&
+        there_is_a_dot_after_start_digits_and_we_verified_that;
+    if (we_found_digits_and_dot_already) {
+      ends_with_some_digits_after_dot_and_we_verified_that = true;
+      continue; // go next, our digit currently is valid
+    }
+
+    bool found_everything_and_just_appending_end_digits =
+        starts_with_some_digits_and_we_verified_that &&
+        there_is_a_dot_after_start_digits_and_we_verified_that &&
+        ends_with_some_digits_after_dot_and_we_verified_that;
+    if (found_everything_and_just_appending_end_digits) {
+      if (!is_ascii_digit(token_candidate[index])) return TokenPredicateResult::Fail;
+
+      continue;
+    }
+
+    ASSERT_THAT("nothing ever gets here [loop]", false);
+  }
+
+  if(starts_with_some_digits_and_we_verified_that && there_is_a_dot_after_start_digits_and_we_verified_that && ends_with_some_digits_after_dot_and_we_verified_that) {
+    return TokenPredicateResult::Success;
+  };
+
+  if(starts_with_some_digits_and_we_verified_that && there_is_a_dot_after_start_digits_and_we_verified_that) {
+    return TokenPredicateResult::Partial;
+  };
+  
+  if(starts_with_some_digits_and_we_verified_that) {
+    return TokenPredicateResult::Partial;
+  }
+
+  ASSERT_THAT("nothing ever gets here [func]", false);
+}
+
+bool is_valid_float_literal_prefix(
+    string &everything_before_first_identifier_character) {
+
+  char prefix_character = get_char_or_negative_one_if_no_char(
+      everything_before_first_identifier_character,
+      everything_before_first_identifier_character.length() - 1);
+
+  if (prefix_character != ' ')
+    return false;
+
+  return true;
+};
+
+bool (*is_valid_float_literal_postfix)(string&) = is_valid_float_literal_prefix;
 
 // token definition
 std::vector<TokenDefinition> token_definitions = {
@@ -260,6 +348,27 @@ std::vector<TokenDefinition> token_definitions = {
                 result = TokenPredicateResult::Fail;
               }
 
+              return result;
+            }},
+
+    TokenDefinition{
+        .kind = TokenKind::FloatLiteral,
+        .predicate =
+            [](string token_candidate, string everything_before,
+               string everything_after) {
+              auto result = TokenPredicateResult::Fail;
+
+              if ((validate_float_literal_raw(token_candidate) == TokenPredicateResult::Partial) &&
+                  is_valid_float_literal_prefix(everything_before)) {
+                result = TokenPredicateResult::Partial;
+              }
+
+              if ((validate_float_literal_raw(token_candidate) == TokenPredicateResult::Success) &&
+                  is_valid_float_literal_prefix(everything_before) &&
+                  is_valid_float_literal_postfix(everything_after)) {
+                result = TokenPredicateResult::Success;
+              }              
+              
               return result;
             }}
 };
