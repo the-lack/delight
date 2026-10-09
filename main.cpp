@@ -2,12 +2,9 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
-#include <format>
 #include <fstream>
 #include <ios>
-#include <print>
 #include <string>
-#include <utility>
 #include <vector>
 
 using std::string;
@@ -16,7 +13,7 @@ void TODO(string description, bool condition_is_ok) {
   if (condition_is_ok)
     return;
 
-  std::println(stderr, "EXIT_FAILURE [TODO]: {}", description);
+  printf("EXIT_FAILURE [TODO]: %s", description.c_str());
   std::exit(EXIT_FAILURE);
 }
 
@@ -24,7 +21,7 @@ void ASSERT_THAT(string description, bool when_false_causes_exit) {
   if (when_false_causes_exit == true)
     return;
 
-  std::println(stderr, "EXIT_FAILURE [ASSERT]: {}", description);
+  printf("EXIT_FAILURE [ASSERT]: %s", description.c_str());
   std::exit(EXIT_FAILURE);
 }
 
@@ -231,8 +228,6 @@ string token_kind_to_string(const TokenKind kind) {
   ASSERT_THAT(
       "no execution path should reach this point as switch is exhaustive",
       did_switch_protect_from_getting_here);
-
-  std::unreachable();
 };
 
 bool try_parse_uint_64(string str, uint64_t &outValue) {
@@ -460,7 +455,7 @@ void classify_token(string current_character_cluster, char new_character) {
 //
 
 int main() {
-  std::println("start");
+  printf("start");
 
   std::fstream entrypoint_file_stream;
   entrypoint_file_stream.open(entry_point_path, std::ios::in);
