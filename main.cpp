@@ -491,8 +491,8 @@ int main() {
   // string processed_characters_so_far =;
   auto characters_to_be_processed = file_vector;
   string current_classification_candidate = "";
-  for (size_t index = file_vector.size(); index >= 0; --index) {
-    // char current_character = vector_pointer[index];
+  for (size_t index = 0; index < file_vector.size(); ++index) {
+    printf("%zu \n", index);
   }
 
   return 0;
