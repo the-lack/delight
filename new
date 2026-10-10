@@ -323,3 +323,16 @@ while(true){
 	// handle EOF
 
 }
+
+
+here's the thing
+
+we have raw token <abc>
+each token has some sort of boundary rule (next, previous)
+negative and positive lookahead
+
+what does validity even mean?
+
+hmm i guess token validity itself is something different from validity i guess.
+
+but both can be during intermediate step
