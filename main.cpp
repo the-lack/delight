@@ -41,12 +41,6 @@ enum class TokenDefinitionPredicateResult {
   TokenInvalid = -1,
   TokenIsValidAndShouldBeFlushed = 0,
   TokenIsValidButShouldBeExpanded = 1
-  // TokenIsValidButHasInvalidPrefix = -2,
-  // TokenIsValidButHasInvalidPostfix = -3,
-  // TokenIsValidButHasInvalidPostfixAndPrefix = -4,
-  // TokenIsValidButRequiresExpandingThroughPostfix = -5,
-  // TokenIsPartialAndRequiresExpandingThroughPostfix = -6,
-  // TokenAndEverythingElseIsValid = 0
 };
 
 enum class RawTokenValidationResult {
@@ -70,13 +64,6 @@ struct TokenDefinition {
       std::vector<char> &current_buffer, std::vector<char> &everything_before,
       std::vector<char> &everything_after);
 };
-
-char get_char_or_negative_one_if_no_char(std::vector<char> &str, size_t index) {
-  if (index >= str.size()) {
-    return -1;
-  }
-  return str[index];
-}
 
 bool is_ascii_letter(char character) {
   char inclusive_lowercase_ascii_start = 'a';
@@ -105,43 +92,6 @@ bool is_ascii_digit(char character) {
   bool is_ascii_digit = (character >= inclusive_ascii_digit_start_at_0) &&
                         (character <= inclusive_ascii_digit_start_at_9);
   return is_ascii_digit;
-}
-
-// general prefix & postfix rules
-bool is_valid_token_prefix(
-    std::vector<char> &everything_before_first_token_character) {
-
-  size_t prefix_buffer_length = everything_before_first_token_character.size();
-
-  if (prefix_buffer_length == 0) {
-    return true;
-  }
-
-  char prefix_character =
-      everything_before_first_token_character[prefix_buffer_length - 1];
-
-  if (prefix_character != ' ')
-    return false;
-
-  return true;
-}
-
-bool is_valid_token_postfix(
-    std::vector<char> &everything_after_last_token_character) {
-
-  size_t postfix_buffer_length = everything_after_last_token_character.size();
-
-  if (postfix_buffer_length == 0) {
-    return true;
-  }
-
-  char postfix_character = everything_after_last_token_character[0];
-
-  if (postfix_character != ' ' && postfix_character != '\r' &&
-      postfix_character != '\n')
-    return false;
-
-  return true;
 }
 
 // token definition
