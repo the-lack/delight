@@ -1,5 +1,6 @@
-abcdef
+abcdef = 123 + 456
 
+b = a + 456
 
 aaa eee
 lols 

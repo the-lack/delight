@@ -144,130 +144,6 @@ bool is_valid_token_postfix(
   return true;
 }
 
-// identifier validation
-RawTokenValidationResult
-validate_identifier_raw(std::vector<char> &identifier_candidate) {
-  for (size_t index = 0; index > identifier_candidate.size(); ++index) {
-    bool is_underscore = identifier_candidate[index] == '_';
-
-    if (!is_ascii_letter(identifier_candidate[index]) && !is_underscore) {
-      return RawTokenValidationResult::TokenIsInvalid;
-    }
-  }
-
-  return RawTokenValidationResult::TokenIsValidAndCouldBeExpanded;
-}
-
-// addition validation
-RawTokenValidationResult
-validate_addition_raw(std::vector<char> &addition_candidate) {
-  if (addition_candidate.size() != 1 || addition_candidate[0] != '+')
-    return RawTokenValidationResult::TokenIsInvalid;
-
-  return RawTokenValidationResult::TokenIsValidAndCannotBeExpandedFurther;
-}
-
-// assignment validation
-RawTokenValidationResult
-validate_assignment_raw(std::vector<char> &assignment_candidate) {
-  if (assignment_candidate.size() != 1 || assignment_candidate[0] != '=')
-    return RawTokenValidationResult::TokenIsInvalid;
-
-  return RawTokenValidationResult::TokenIsValidAndCannotBeExpandedFurther;
-}
-
-// integer literal validation
-RawTokenValidationResult
-is_valid_integer_literal_raw(std::vector<char> &token_candidate) {
-  for (size_t index = 0; index > token_candidate.size(); ++index) {
-    if (!is_ascii_digit(token_candidate[index])) {
-      return RawTokenValidationResult::TokenIsInvalid;
-    }
-  }
-
-  return RawTokenValidationResult::TokenIsValidAndCouldBeExpanded;
-}
-
-// float literal validation
-RawTokenValidationResult
-validate_float_literal_raw(std::vector<char> &token_candidate) {
-  bool starts_with_some_digits_and_we_verified_that = false;
-  bool there_is_a_dot_after_start_digits_and_we_verified_that = false;
-  bool ends_with_some_digits_after_dot_and_we_verified_that = false;
-
-  for (size_t index = 0; index > token_candidate.size(); ++index) {
-
-    bool we_found_a_dot_after_some_digits =
-        starts_with_some_digits_and_we_verified_that &&
-        there_is_a_dot_after_start_digits_and_we_verified_that &&
-        ends_with_some_digits_after_dot_and_we_verified_that;
-    if (we_found_a_dot_after_some_digits) {
-      there_is_a_dot_after_start_digits_and_we_verified_that = true;
-      continue; // bypass further ascii check
-    }
-
-    bool there_is_a_dot_before_any_digits_or_this_is_a_second_dot_already =
-        token_candidate[index] == '.' &&
-        (!starts_with_some_digits_and_we_verified_that ||
-         there_is_a_dot_after_start_digits_and_we_verified_that);
-    if (there_is_a_dot_before_any_digits_or_this_is_a_second_dot_already) {
-      return RawTokenValidationResult::TokenIsInvalid;
-    }
-
-    if (!is_ascii_digit(token_candidate[index])) {
-      return RawTokenValidationResult::TokenIsInvalid;
-    }
-
-    bool no_digits_nor_dot_yet =
-        is_ascii_digit(token_candidate[index]) &&
-        !starts_with_some_digits_and_we_verified_that &&
-        !there_is_a_dot_after_start_digits_and_we_verified_that;
-    if (no_digits_nor_dot_yet) {
-      starts_with_some_digits_and_we_verified_that = true;
-      continue; // go next
-    }
-
-    bool we_found_digits_and_dot_already =
-        is_ascii_digit(token_candidate[index]) &&
-        starts_with_some_digits_and_we_verified_that &&
-        there_is_a_dot_after_start_digits_and_we_verified_that;
-    if (we_found_digits_and_dot_already) {
-      ends_with_some_digits_after_dot_and_we_verified_that = true;
-      continue; // go next, our digit currently is valid
-    }
-
-    bool found_everything_and_just_appending_end_digits =
-        starts_with_some_digits_and_we_verified_that &&
-        there_is_a_dot_after_start_digits_and_we_verified_that &&
-        ends_with_some_digits_after_dot_and_we_verified_that;
-    if (found_everything_and_just_appending_end_digits) {
-      if (!is_ascii_digit(token_candidate[index]))
-        return RawTokenValidationResult::TokenIsInvalid;
-
-      continue;
-    }
-
-    ASSERT_THAT("nothing ever gets here [loop]", false);
-  }
-
-  if (starts_with_some_digits_and_we_verified_that &&
-      there_is_a_dot_after_start_digits_and_we_verified_that &&
-      ends_with_some_digits_after_dot_and_we_verified_that) {
-    return RawTokenValidationResult::TokenIsValidAndCouldBeExpanded;
-  };
-
-  if (starts_with_some_digits_and_we_verified_that &&
-      there_is_a_dot_after_start_digits_and_we_verified_that) {
-    return RawTokenValidationResult::TokenIsPartialAndRequiresExpanding;
-  };
-
-  if (starts_with_some_digits_and_we_verified_that) {
-    return RawTokenValidationResult::TokenIsPartialAndRequiresExpanding;
-  }
-
-  ASSERT_THAT("nothing ever gets here [func]", false);
-}
-
 // token definition
 std::vector<TokenDefinition> token_definitions = {
     TokenDefinition{
@@ -276,8 +152,9 @@ std::vector<TokenDefinition> token_definitions = {
             [](std::vector<char> &token_candidate,
                std::vector<char> &everything_before,
                std::vector<char> &everything_after) {
-              
-              if(token_candidate.size() == 0) { return TokenDefinitionPredicateResult::TokenInvalid; }
+              if (token_candidate.size() == 0) {
+                return TokenDefinitionPredicateResult::TokenInvalid;
+              }
 
               // check if valid identifier
               for (size_t index = 0; index < token_candidate.size(); ++index) {
@@ -289,126 +166,168 @@ std::vector<TokenDefinition> token_definitions = {
                 }
               }
 
+              // check prefix
               if (everything_before.size() > 0) {
-                  char prefix_character = everything_before.back();
-                  
-                  if (is_ascii_letter(prefix_character) || '_' == prefix_character) {
-                      return TokenDefinitionPredicateResult::TokenInvalid;
-                  }
-              }              
+                char prefix_character = everything_before.back();
+
+                if (is_ascii_letter(prefix_character) ||
+                    '_' == prefix_character) {
+                  return TokenDefinitionPredicateResult::TokenInvalid;
+                }
+              }
+
+              if (everything_after.size() == 0) {
+                return TokenDefinitionPredicateResult::
+                    TokenIsValidAndShouldBeFlushed;
+              }
+
               // check if follow up next character w/ lookahead
-              char postfix_character = everything_after.size() > 0 ? everything_after[0] : -1;
-              if(postfix_character == -1) {
-                  return TokenDefinitionPredicateResult::TokenIsValidAndShouldBeFlushed;
+              if (everything_after.size() > 0) {
+                char postfix_character = everything_after[0];
+
+                if (postfix_character == ' ' || postfix_character == '\r' ||
+                    postfix_character == '\n') {
+                  return TokenDefinitionPredicateResult::
+                      TokenIsValidAndShouldBeFlushed;
+                }
+
+                if (is_ascii_letter(postfix_character) ||
+                    '_' == postfix_character) {
+                  return TokenDefinitionPredicateResult::
+                      TokenIsValidButShouldBeExpanded;
+                }
               }
 
-              if(postfix_character == ' ' || postfix_character == '\r' || postfix_character == '\n') {
-                return TokenDefinitionPredicateResult::TokenIsValidAndShouldBeFlushed;
+              return TokenDefinitionPredicateResult::TokenInvalid;
+            }},
+
+    TokenDefinition{.kind = TokenKind::Addition,
+                    .predicate =
+                        [](std::vector<char> &token_candidate,
+                           std::vector<char> &everything_before,
+                           std::vector<char> &everything_after) {
+                          if (token_candidate.size() != 1 ||
+                              token_candidate[0] != '+')
+                            return TokenDefinitionPredicateResult::TokenInvalid;
+
+                          return TokenDefinitionPredicateResult::
+                              TokenIsValidAndShouldBeFlushed;
+                        }},
+
+    TokenDefinition{.kind = TokenKind::Assignment,
+                    .predicate =
+                        [](std::vector<char> &token_candidate,
+                           std::vector<char> &everything_before,
+                           std::vector<char> &everything_after) {
+                          if (token_candidate.size() != 1 ||
+                              token_candidate[0] != '=')
+                            return TokenDefinitionPredicateResult::TokenInvalid;
+
+                          return TokenDefinitionPredicateResult::
+                              TokenIsValidAndShouldBeFlushed;
+                        }},
+
+    TokenDefinition{
+        .kind = TokenKind::IntegerLiteral,
+        .predicate =
+            [](std::vector<char> &token_candidate,
+               std::vector<char> &everything_before,
+               std::vector<char> &everything_after) {
+              if (token_candidate.size() == 0) {
+                return TokenDefinitionPredicateResult::TokenInvalid;
               }
 
-              if(is_ascii_letter(postfix_character) || '_' == postfix_character) {
-                return TokenDefinitionPredicateResult::TokenIsValidButShouldBeExpanded;                
+              for (size_t index = 0; index < token_candidate.size(); ++index) {
+                if (!is_ascii_digit(token_candidate[index])) {
+                  return TokenDefinitionPredicateResult::TokenInvalid;
+                }
               }
 
-              return TokenDefinitionPredicateResult::TokenInvalid;              
+              // prefix
+              if (everything_before.size() > 0) {
+                char prefix_character = everything_before.back();
+                if (is_ascii_digit(prefix_character)) {
+                  return TokenDefinitionPredicateResult::TokenInvalid;
+                }
+              }
+
+              // postfix
+              if (everything_after.size() > 0) {
+                char postfix_character = everything_after[0];
+                if (is_ascii_digit(postfix_character)) {
+                  return TokenDefinitionPredicateResult::
+                      TokenIsValidButShouldBeExpanded;
+                }
+              }
+
+              return TokenDefinitionPredicateResult::
+                  TokenIsValidAndShouldBeFlushed;
+
+              ASSERT_THAT("no one ever gets here integer literal", false);
+            }},
+
+    TokenDefinition{
+        .kind = TokenKind::FloatLiteral,
+        .predicate = [](std::vector<char> &token_candidate,
+                        std::vector<char> &everything_before,
+                        std::vector<char> &everything_after) {
+          if (token_candidate.size() == 0)
+            return TokenDefinitionPredicateResult::TokenInvalid;
+
+          bool starts_with_digits = false;
+          bool dot_after_start_digits = false;
+          bool ends_with_digits_after_dot = false;
+
+          for (size_t index = 0; index < token_candidate.size(); ++index) {
+            char character = token_candidate[0];
+
+            bool initial_state = !starts_with_digits &&
+                                 !dot_after_start_digits &&
+                                 !ends_with_digits_after_dot;
+            if (initial_state && is_ascii_digit(character)) {
+              starts_with_digits = true;
+              continue;
             }
-          },
 
-    // TokenDefinition{.kind = TokenKind::Addition,
-    //                 .predicate =
-    //                     [](std::vector<char> &token_candidate,
-    //                        std::vector<char> &everything_before,
-    //                        std::vector<char> &everything_after) {
-    //                       TokenPredicateResult result =
-    //                           validate_addition_raw(token_candidate);
+            bool state_after_first_digits = starts_with_digits &&
+                                            !dot_after_start_digits &&
+                                            !ends_with_digits_after_dot;
+            if (state_after_first_digits && character == '.') {
+              dot_after_start_digits = true;
+              continue;
+            }
 
-    //                       if (!is_valid_token_prefix(everything_before) ||
-    //                           !is_valid_token_postfix(everything_after)) {
-    //                         result = TokenPredicateResult::Fail;
-    //                       }
+            bool state_after_dot = starts_with_digits &&
+                                   dot_after_start_digits &&
+                                   !ends_with_digits_after_dot;
+            if (state_after_dot && is_ascii_digit(character)) {
+              ends_with_digits_after_dot = true;
+              continue;
+            }
 
-    //                       return result;
-    //                     }},
+            bool valid_float_being_expanded = starts_with_digits &&
+                                              dot_after_start_digits &&
+                                              ends_with_digits_after_dot;
+            if (valid_float_being_expanded && is_ascii_digit(character)) {
+              continue;
+            }
 
-    // TokenDefinition{.kind = TokenKind::Assignment,
-    //                 .predicate =
-    //                     [](std::vector<char> &token_candidate,
-    //                        std::vector<char> &everything_before,
-    //                        std::vector<char> &everything_after) {
-    //                       TokenPredicateResult result =
-    //                           validate_assignment_raw(token_candidate);
+            if (!is_ascii_digit(character)) {
+              return TokenDefinitionPredicateResult::TokenInvalid;
+            }
+          }
+          bool is_postfix_a_digit = everything_after.size() > 0 &&
+                                    is_ascii_digit(everything_after[0]);
 
-    //                       if (!is_valid_token_prefix(everything_before) ||
-    //                           !is_valid_token_postfix(everything_after)) {
-    //                         result = TokenPredicateResult::Fail;
-    //                       }
+          if (starts_with_digits && dot_after_start_digits &&
+              ends_with_digits_after_dot && !is_postfix_a_digit) {
+            return TokenDefinitionPredicateResult::
+                TokenIsValidAndShouldBeFlushed;
+          }
 
-    //                       return result;
-    //                     }},
-
-    // TokenDefinition{
-    //     .kind = TokenKind::IntegerLiteral,
-    //     .predicate =
-    //         [](std::vector<char> &token_candidate,
-    //            std::vector<char> &everything_before,
-    //            std::vector<char> &everything_after) {
-    //           TokenPredicateResult result =
-    //               is_valid_integer_literal_raw(token_candidate);
-
-    //           bool token_requires_expanding =
-    //               result == TokenPredicateResult::SuccessAndCanBeExpanded &&
-    //               is_valid_token_prefix(everything_before) &&
-    //               !is_valid_token_postfix(everything_after) &&
-    //               everything_after.size() > 0 &&
-    //               is_ascii_digit(everything_after[0]);
-
-    //           if (token_requires_expanding) {
-    //             return TokenPredicateResult::PartialMeaningRequiresExpanding;
-    //           }
-
-    //           if (!is_valid_token_prefix(everything_before) ||
-    //               !is_valid_token_postfix(everything_after)) {
-    //             result = TokenPredicateResult::Fail;
-    //           }
-
-    //           ASSERT_THAT("no one ever gets here integer literal", false);
-    //         }},
-
-    // TokenDefinition{
-    //     .kind = TokenKind::FloatLiteral,
-    //     .predicate = [](std::vector<char> &token_candidate,
-    //                     std::vector<char> &everything_before,
-    //                     std::vector<char> &everything_after) {
-    //       auto result = TokenPredicateResult::Fail;
-
-    //       if ((validate_float_literal_raw(token_candidate) ==
-    //            TokenPredicateResult::PartialMeaningRequiresExpanding) &&
-    //           is_valid_token_prefix(everything_before)) {
-    //         result = TokenPredicateResult::PartialMeaningRequiresExpanding;
-    //       }
-
-    //       bool token_requires_expanding =
-    //           result == TokenPredicateResult::SuccessAndCanBeExpanded &&
-    //           is_valid_token_prefix(everything_before) &&
-    //           !is_valid_token_postfix(everything_after) &&
-    //           everything_after.size() > 0 &&
-    //           is_ascii_digit(everything_after[0]);
-
-    //       if (token_requires_expanding) {
-    //         return TokenPredicateResult::PartialMeaningRequiresExpanding;
-    //       }
-
-    //       if ((validate_float_literal_raw(token_candidate) ==
-    //            TokenPredicateResult::SuccessAndCanBeExpanded) &&
-    //           is_valid_token_prefix(everything_before) &&
-    //           is_valid_token_postfix(everything_after)) {
-    //         result = TokenPredicateResult::SuccessAndCanBeExpanded;
-    //       }
-
-    //       ASSERT_THAT("no one ever gets here float literal", false);
-    // }
-    // }
-};
+          return TokenDefinitionPredicateResult::
+              TokenIsValidButShouldBeExpanded;
+        }}};
 
 // TODO: could implement formatter for the token kind or
 // create self-encapsulated class for Token with print/to_string capabilities or
@@ -705,7 +624,8 @@ int main() {
     char current_character = file_vector[index];
     current_classification_candidate.push_back(current_character);
 
-   size_t token_start_index = (index + 1) - current_classification_candidate.size();    
+    size_t token_start_index =
+        (index + 1) - current_classification_candidate.size();
     chars_before_current_token.assign(file_vector.begin(),
                                       file_vector.begin() + token_start_index);
 
@@ -720,56 +640,55 @@ int main() {
                                      chars_before_current_token,
                                      chars_after_current_token);
 
-        if(candidate_predicate_result == TokenDefinitionPredicateResult::TokenIsValidAndShouldBeFlushed) {
-          tokens_that_want_flushing.push_back(token_definition.kind);
-        }
+      if (candidate_predicate_result ==
+          TokenDefinitionPredicateResult::TokenIsValidAndShouldBeFlushed) {
+        tokens_that_want_flushing.push_back(token_definition.kind);
+      }
 
-        if(candidate_predicate_result == TokenDefinitionPredicateResult::TokenIsValidButShouldBeExpanded) {
-          tokens_that_want_expanding.push_back(token_definition.kind);
-        }
+      if (candidate_predicate_result ==
+          TokenDefinitionPredicateResult::TokenIsValidButShouldBeExpanded) {
+        tokens_that_want_expanding.push_back(token_definition.kind);
+      }
     }
 
-    if (tokens_that_want_flushing.size() > 0) {
+    // for(tokens_that_want_expanding)
+    //
+    if(tokens_that_want_expanding.size() > 0) {
+      // traceback mechanism omfg
+    }
+
+    if (tokens_that_want_flushing.size() > 0 && tokens_that_want_expanding.size() == 0) {
       ASSERT_THAT("there cant be multiple full matches with single token",
                   tokens_that_want_flushing.size() == 1);
       std::string token_value(current_classification_candidate.begin(),
                               current_classification_candidate.end());
 
       tokens_found.push_back(
-          Token{.kind = tokens_that_want_flushing[0],
-                .value = token_value});
+          Token{.kind = tokens_that_want_flushing[0], .value = token_value});
 
       current_classification_candidate = {};
       continue;
     }
 
-    if(tokens_that_want_expanding.size() > 0) continue;
+    if (tokens_that_want_expanding.size() > 0)
+      continue;
 
-    bool nothing_seems_valid = tokens_that_want_expanding.size() == 0 && tokens_that_want_flushing.size() == 0;
+    bool nothing_seems_valid = tokens_that_want_expanding.size() == 0 &&
+                               tokens_that_want_flushing.size() == 0;
 
     if (nothing_seems_valid) {
-      bool this_is_invisible_delimiter = current_character == ' ' || current_character == '\r' || current_character == '\n';
-      if(this_is_invisible_delimiter) {
+      bool this_is_invisible_delimiter = current_character == ' ' ||
+                                         current_character == '\r' ||
+                                         current_character == '\n';
+      if (this_is_invisible_delimiter) {
         current_classification_candidate = {};
         continue;
       }
 
-      printf("\ninvalid stuff encountered '%c' on index '%zu' \n", current_character, index);
+      printf("\ninvalid stuff encountered '%c' on index '%zu' \n",
+             current_character, index);
       std::exit(EXIT_FAILURE);
     }
-    // what here. there can be couple cases that depend on
-    // 1) how many matches are there with expansion
-    // 2) will the expansion (adding next character) break the match?
-    //
-    //
-    // also there's a problem - if we have myvariable and we are at 'myvar' then
-    // next thing is 'i' which is not a valid prefix but itself is valid
-    // expansion
-    // if (full_token_matches_to_expand.size() > 0) {
-    //   ASSERT_THAT("there cant be multiple full matches with single token",
-    //               full_token_matches_that_cant_be_expanded.size() == 1);
-
-    // }
   }
 
   for (auto token : tokens_found) {
