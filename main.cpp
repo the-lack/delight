@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <compare>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -40,14 +41,7 @@ enum class TokenKind {
 enum class TokenDefinitionPredicateResult {
   TokenInvalid = -1,
   TokenIsValidAndShouldBeFlushed = 0,
-  TokenIsValidButShouldBeExpanded = 1
-};
-
-enum class RawTokenValidationResult {
-  TokenIsInvalid = -1,
-  TokenIsPartialAndRequiresExpanding = -2,
-  TokenIsValidAndCouldBeExpanded = 0,
-  TokenIsValidAndCannotBeExpandedFurther = 1,
+  TokenShouldBeExpanded = 1
 };
 
 struct Token {
@@ -143,8 +137,7 @@ std::vector<TokenDefinition> token_definitions = {
 
                 if (is_ascii_letter(postfix_character) ||
                     '_' == postfix_character) {
-                  return TokenDefinitionPredicateResult::
-                      TokenIsValidButShouldBeExpanded;
+                  return TokenDefinitionPredicateResult::TokenShouldBeExpanded;
                 }
               }
 
@@ -205,8 +198,12 @@ std::vector<TokenDefinition> token_definitions = {
               if (everything_after.size() > 0) {
                 char postfix_character = everything_after[0];
                 if (is_ascii_digit(postfix_character)) {
-                  return TokenDefinitionPredicateResult::
-                      TokenIsValidButShouldBeExpanded;
+                  return TokenDefinitionPredicateResult::TokenShouldBeExpanded;
+                }
+
+                if (postfix_character != ' ' && postfix_character != '\r' &&
+                    postfix_character != '\n') {
+                  return TokenDefinitionPredicateResult::TokenInvalid;
                 }
               }
 
@@ -229,7 +226,12 @@ std::vector<TokenDefinition> token_definitions = {
           bool ends_with_digits_after_dot = false;
 
           for (size_t index = 0; index < token_candidate.size(); ++index) {
-            char character = token_candidate[0];
+            char character = token_candidate[index];
+
+            // printf("\n current_character = %c | starts_with_digits = %d | dot "
+            //        "after start digits %d | ends_with_digits_after_dot = %d\n",
+            //        character, starts_with_digits, dot_after_start_digits,
+            //        ends_with_digits_after_dot);
 
             bool initial_state = !starts_with_digits &&
                                  !dot_after_start_digits &&
@@ -266,17 +268,41 @@ std::vector<TokenDefinition> token_definitions = {
               return TokenDefinitionPredicateResult::TokenInvalid;
             }
           }
+
           bool is_postfix_a_digit = everything_after.size() > 0 &&
                                     is_ascii_digit(everything_after[0]);
 
+          bool is_postfix_a_delimiter_or_nothing =
+              everything_after.size() == 0 ||
+              (everything_after[0] == ' ' || everything_after[0] == '\r' ||
+               everything_after[0] == '\n');
+
+          bool is_postfix_a_dot =
+              everything_after.size() > 0 && '.' == everything_after[0];
+
           if (starts_with_digits && dot_after_start_digits &&
-              ends_with_digits_after_dot && !is_postfix_a_digit) {
+              ends_with_digits_after_dot && is_postfix_a_delimiter_or_nothing) {
             return TokenDefinitionPredicateResult::
                 TokenIsValidAndShouldBeFlushed;
           }
 
-          return TokenDefinitionPredicateResult::
-              TokenIsValidButShouldBeExpanded;
+          if (starts_with_digits && !dot_after_start_digits &&
+              !ends_with_digits_after_dot &&
+              (is_postfix_a_dot || is_postfix_a_digit)) {
+            return TokenDefinitionPredicateResult::TokenShouldBeExpanded;
+          }
+
+          if (starts_with_digits && dot_after_start_digits &&
+              !ends_with_digits_after_dot && is_postfix_a_digit) {
+            return TokenDefinitionPredicateResult::TokenShouldBeExpanded;
+          }
+
+          if (starts_with_digits && dot_after_start_digits &&
+              ends_with_digits_after_dot && is_postfix_a_digit) {
+            return TokenDefinitionPredicateResult::TokenShouldBeExpanded;
+          }
+
+          return TokenDefinitionPredicateResult::TokenInvalid;
         }}};
 
 // TODO: could implement formatter for the token kind or
@@ -596,18 +622,20 @@ int main() {
       }
 
       if (candidate_predicate_result ==
-          TokenDefinitionPredicateResult::TokenIsValidButShouldBeExpanded) {
+          TokenDefinitionPredicateResult::TokenShouldBeExpanded) {
         tokens_that_want_expanding.push_back(token_definition.kind);
       }
     }
 
     // for(tokens_that_want_expanding)
     //
-    if(tokens_that_want_expanding.size() > 0) {
-      // traceback mechanism omfg
-    }
+    // if (tokens_that_want_flushing.size() > 0 &&
+    //     tokens_that_want_expanding.size() > 0) {
+    //   // traceback mechanism omfg
+    // }
 
-    if (tokens_that_want_flushing.size() > 0 && tokens_that_want_expanding.size() == 0) {
+    if (tokens_that_want_flushing.size() > 0 &&
+        tokens_that_want_expanding.size() == 0) {
       ASSERT_THAT("there cant be multiple full matches with single token",
                   tokens_that_want_flushing.size() == 1);
       std::string token_value(current_classification_candidate.begin(),
@@ -619,6 +647,12 @@ int main() {
       current_classification_candidate = {};
       continue;
     }
+
+    ASSERT_THAT("for now we don't have tokens that expand from other tokens "
+                "and we dont have to implement "
+                "backtracking/checkpoint/lookahed tricks for expansion ",
+                !(tokens_that_want_flushing.size() > 0 &&
+                    tokens_that_want_expanding.size() > 0));
 
     if (tokens_that_want_expanding.size() > 0)
       continue;
@@ -635,7 +669,7 @@ int main() {
         continue;
       }
 
-      printf("\ninvalid stuff encountered '%c' on index '%zu' \n",
+      printf("\ninvalid stuff encountered around '%c' on index '%zu' \n",
              current_character, index);
       std::exit(EXIT_FAILURE);
     }
