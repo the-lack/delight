@@ -8,6 +8,12 @@
 #include <string>
 #include <vector>
 
+// llvm stuff
+// #include "llvm/IR/LLVMContext.h"
+// #include "llvm/IR/IRBuilder.h"
+// #include "llvm/IR/Module.h"
+// #include "llvm/IR/Verifier.h"
+
 using std::string;
 
 void TODO(string description, bool condition_is_ok) {
@@ -36,6 +42,7 @@ enum class TokenKind {
   StatementEnding,
   Addition,
   Assignment,
+  Delimiter,
 };
 
 enum class TokenDefinitionPredicateResult {
@@ -169,6 +176,20 @@ std::vector<TokenDefinition> token_definitions = {
                           return TokenDefinitionPredicateResult::
                               TokenIsValidAndShouldBeFlushed;
                         }},
+
+    TokenDefinition{.kind = TokenKind::Delimiter,
+                    .predicate =
+                        [](std::vector<char> &token_candidate,
+                           std::vector<char> &everything_before,
+                           std::vector<char> &everything_after) {
+                          if (token_candidate.size() != 1 ||
+                              token_candidate[0] != '\n')
+                            return TokenDefinitionPredicateResult::TokenInvalid;
+
+                          return TokenDefinitionPredicateResult::
+                              TokenIsValidAndShouldBeFlushed;
+                        }},
+                        
 
     TokenDefinition{
         .kind = TokenKind::IntegerLiteral,
@@ -327,6 +348,8 @@ string token_kind_to_string(const TokenKind kind) {
     return "Addition";
   case TokenKind::Assignment:
     return "Assignment";
+  case TokenKind::Delimiter:
+    return "Delimiter";
   };
 
   const int did_switch_protect_from_getting_here = false;
@@ -679,6 +702,11 @@ int main() {
     printf("\n%s : '%s'", token_kind_to_string(token.kind).c_str(),
            token.value.c_str());
   }
+  // parse
+
+  // vec<Token>
+
+
 
   return 0;
 };
