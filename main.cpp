@@ -9,8 +9,8 @@
 #include <vector>
 
 // llvm stuff
-// #include "llvm/IR/LLVMContext.h"
 // #include "llvm/IR/IRBuilder.h"
+// #include "llvm/IR/LLVMContext.h"
 // #include "llvm/IR/Module.h"
 // #include "llvm/IR/Verifier.h"
 
@@ -189,7 +189,6 @@ std::vector<TokenDefinition> token_definitions = {
                           return TokenDefinitionPredicateResult::
                               TokenIsValidAndShouldBeFlushed;
                         }},
-                        
 
     TokenDefinition{
         .kind = TokenKind::IntegerLiteral,
@@ -249,10 +248,11 @@ std::vector<TokenDefinition> token_definitions = {
           for (size_t index = 0; index < token_candidate.size(); ++index) {
             char character = token_candidate[index];
 
-            // printf("\n current_character = %c | starts_with_digits = %d | dot "
-            //        "after start digits %d | ends_with_digits_after_dot = %d\n",
-            //        character, starts_with_digits, dot_after_start_digits,
-            //        ends_with_digits_after_dot);
+            // printf("\n current_character = %c | starts_with_digits = %d | dot
+            // "
+            //        "after start digits %d | ends_with_digits_after_dot =
+            //        %d\n", character, starts_with_digits,
+            //        dot_after_start_digits, ends_with_digits_after_dot);
 
             bool initial_state = !starts_with_digits &&
                                  !dot_after_start_digits &&
@@ -675,7 +675,7 @@ int main() {
                 "and we dont have to implement "
                 "backtracking/checkpoint/lookahed tricks for expansion ",
                 !(tokens_that_want_flushing.size() > 0 &&
-                    tokens_that_want_expanding.size() > 0));
+                  tokens_that_want_expanding.size() > 0));
 
     if (tokens_that_want_expanding.size() > 0)
       continue;
@@ -702,11 +702,38 @@ int main() {
     printf("\n%s : '%s'", token_kind_to_string(token.kind).c_str(),
            token.value.c_str());
   }
+
   // parse
+  std::vector<std::vector<TokenKind>> grammar_rules = {
+      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::IntegerLiteral},
+      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::FloatLiteral},
+      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::Identifier},
+  };
 
-  // vec<Token>
+  // llvm::LLVMContext context;
+  // llvm::Module module("my_cool_module", context);
+  // llvm::IRBuilder<> builder(context);
 
+  // std::vector<Token> stuff_to_be_executed  = {};
+  std::vector<Token> current_grammar_thing = {};
+  std::vector<TokenKind> current_grammar_thing_kind = {};
 
+  bool shall_we_flush = false;
+
+  for (auto token : tokens_found) {
+    current_grammar_thing.push_back(token);
+    current_grammar_thing_kind.push_back(token.kind);
+
+    for (auto grammar_rule : grammar_rules) {
+
+      if (current_grammar_thing_kind ==
+          std::vector{TokenKind::Identifier, TokenKind::Assignment,
+                      TokenKind::IntegerLiteral}) {
+
+        printf("we have one integer init");
+      }
+    }
+  };
 
   return 0;
 };
