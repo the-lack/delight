@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <fstream>
 #include <ios>
+// #include <llvm/IR/Function.h>
+// #include <llvm/Support/raw_ostream.h>
+#include <llvm/TargetParser/Triple.h>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -13,6 +17,30 @@
 // #include "llvm/IR/LLVMContext.h"
 // #include "llvm/IR/Module.h"
 // #include "llvm/IR/Verifier.h"
+
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Host.h"
+
+// using namespace llvm;
+// using namespace llvm::sys;
 
 using std::string;
 
@@ -583,8 +611,49 @@ void classify_token(string current_character_cluster, char new_character) {
 //
 
 int main() {
-  printf("start");
 
+  auto llvm_context = std::make_unique<llvm::LLVMContext>();
+  auto llvm_module =
+      std::make_unique<llvm::Module>("main_module", *llvm_context);
+  llvm::IRBuilder<> llvm_builder(*llvm_context);
+
+  llvm::InitializeAllTargetInfos();
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmParsers();
+  llvm::InitializeAllAsmPrinters();
+
+  auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+  llvm::Triple name(TargetTriple);
+  llvm_module->setTargetTriple(name);
+
+  std::string Error;
+  const llvm::Target *Target = llvm::TargetRegistry::lookupTarget(name, Error);
+
+  if (!Target) {
+    llvm::errs() << "Error finding target: " << Error << "\n";
+    return 1;
+  }
+
+  std::string llvm_cpu = "generic";
+  std::string llvm_features = "";
+  llvm::TargetOptions llvm_target_options;
+  auto llvm_reloc_model = std::optional<llvm::Reloc::Model>();
+
+  llvm::TargetMachine *TargetMachine =
+      Target->createTargetMachine(name, llvm_cpu, llvm_features, llvm_target_options, llvm_reloc_model);
+  llvm_module->setDataLayout(TargetMachine->createDataLayout());
+
+  llvm::FunctionType *FuncType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), {}, false);
+  llvm::Function *MainFunc = llvm::Function::Create(FuncType,llvm::Function::ExternalLinkage, "main", llvm_module.get());
+
+  llvm::BasicBlock *BB = llvm::BasicBlock::Create(*llvm_context, "entry",
+  MainFunc);
+  llvm_builder.SetInsertPoint(BB);
+
+  llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+
+  printf("start");
   std::fstream entrypoint_file_stream;
   entrypoint_file_stream.open(entry_point_path, std::ios::in);
 
@@ -703,37 +772,57 @@ int main() {
            token.value.c_str());
   }
 
-  // parse
   std::vector<std::vector<TokenKind>> grammar_rules = {
-      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::IntegerLiteral},
-      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::FloatLiteral},
-      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::Identifier},
+      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::IntegerLiteral,
+       TokenKind::Addition, TokenKind::Addition, TokenKind::Delimiter},
   };
 
-  // llvm::LLVMContext context;
-  // llvm::Module module("my_cool_module", context);
-  // llvm::IRBuilder<> builder(context);
-
-  // std::vector<Token> stuff_to_be_executed  = {};
   std::vector<Token> current_grammar_thing = {};
   std::vector<TokenKind> current_grammar_thing_kind = {};
 
   bool shall_we_flush = false;
 
-  for (auto token : tokens_found) {
-    current_grammar_thing.push_back(token);
-    current_grammar_thing_kind.push_back(token.kind);
+  // for (auto token : tokens_found) {
+    // current_grammar_thing.push_back(token);
+    // current_grammar_thing_kind.push_back(token.kind);
 
-    for (auto grammar_rule : grammar_rules) {
+      // printf("dupa");
+    // if (tokens_found == grammar_rules[0]) {
+      printf("dupa2");
 
-      if (current_grammar_thing_kind ==
-          std::vector{TokenKind::Identifier, TokenKind::Assignment,
-                      TokenKind::IntegerLiteral}) {
+      uint64_t left_int;
+      uint64_t right_int;
+      bool parsed_left =
+          try_parse_uint_64(tokens_found[2].value, left_int);
+      bool parsed_right =
+          try_parse_uint_64(tokens_found[4].value, right_int);
 
-        printf("we have one integer init");
-      }
-    }
-  };
+      ASSERT_THAT("parsed", parsed_left && parsed_right);
+      printf("left: %lu", left_int);
+      printf("right: %lu", right_int);
+      
+      llvm::Value *llvm_left = llvm::ConstantInt::get(
+          llvm::Type::getInt32Ty(*llvm_context), left_int);
+      llvm::Value *llvm_right =
+          llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context),
+                                 right_int);
+
+      llvm_builder.CreateAdd(llvm_left, llvm_right);
+      // break;
+    // }
+  // };
+
+      printf("dupa3");
+  std::error_code EC;
+  llvm::raw_fd_ostream dest("output.ll", EC);
+
+  if (EC) {
+    llvm::errs() << "Could not open file: " << EC.message() << "\n";
+    return 1;
+  }
+
+  llvm_module->print(dest, nullptr);
+  dest.flush();
 
   return 0;
 };
