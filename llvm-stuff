@@ -1,0 +1,43 @@
+i would prefer my language to be compiled, interpreted languages are not real.
+
+llvm kinda sucks but kinda doesn't.
+
+i would like to have stdlib in my language that has things like e.g. print statement.
+
+ideally the language is cross-os and cross-cpu.
+
+llvm should take care of cross-cpu stuff.
+
+i would like to have my own, independent stdlib.
+
+i feel like relying on C library will be kinda ugly.
+
+-- PERFECT SCENARIO:
+
+- support for Linux, Windows, MacOs, FreeBSD, Unix in general, POSIX
+
+- support for :
+	- CISC: x86, x86_64, 
+	- RISC/RISC-V: ARM - apple m1/2/3, snapdragons
+	- PowerPC
+	- MIPS
+	- 32bit
+	- 64bit
+
+- support for
+	- big endian
+	- little endian
+
+- complete C library independence
+
+- variable page sizes
+
+
+--- REAL SCENARIO (scope cutting)
+
+- little-endian only
+- 64bit architecture only
+- rely on glibc
+- rely on POSIX
+- linux-only
+- CISC-only (x86_64)
