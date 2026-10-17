@@ -41,3 +41,47 @@ i feel like relying on C library will be kinda ugly.
 - rely on POSIX
 - linux-only
 - CISC-only (x86_64)
+- custom library wrapper
+
+--- thoughts
+
+outside typical language functionality i will need some sort of thing to interop with OS
+in this case it will be linux. basic functionality I will need will be:
+
+1. printing
+	a) STDOUT
+	b) STDERR
+
+2. reading user input
+
+3. file reading
+
+4. sockets / networking
+
+one way to do it would be to have some sort of a C library that compiles to IR.
+the stdlib has functions like delight_print(), read(), http_get() or others.
+
+the user of my language calls a print in some syntax form with some arguments.
+
+let's assume delight_print() is a part of my C stdlib, requires a string pointer and it's length.
+like this:
+
+void delight_print(uint64 string_pointer, uint64 character_count) {
+	... // implementation
+}
+
+let's assume in files of my language it's caled just 'print' and i use some random syntax e.g.:
+
+print "skibidi"
+
+under the hood i see in AST thru grammar rules that there was a call to print with "skbidi"
+under the hood i can allocate "skibidi" on the stack/heap (or maybe drop the stack/heap approach like jblow)
+
+understand that it's a call to delight_print with a pointer to allocated variable with the length of skibidi
+
+then we somehow will need to create in LLVM IR a reference of sort to our delight_print function name (this is step 1)
+and (step 2 ->) create delight_print IR as an LLVM IR function with proper implementation and link it somewhere somehow when compiling our thing.
+
+either this or we could copy paste IR implementation in place of every print call which is not only less performant (bloated IR size although probably optimized away by compiler although fuck compiler optimizations respectfully) might be actually harder i suppose.
+
+this can create drift between compiler code and actual implementation of the function (not great).
