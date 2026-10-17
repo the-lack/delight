@@ -9,8 +9,8 @@ define dso_local i32 @main() {
 entry:
   %myVar = alloca i32, align 4
   store i32 579, ptr %myVar, align 4
-  %0 = call i32 (ptr, ...) @printf(ptr @0)
+  %0 = call i32 (ptr, i64, ...) @delight_print(ptr @0, i64 8)
   ret i32 0
 }
 
-declare i32 @printf(ptr, ...)
+declare i32 @delight_print(ptr, i64, ...)

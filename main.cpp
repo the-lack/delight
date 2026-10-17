@@ -661,8 +661,10 @@ int main() {
 
   /* define printf for later linkage on top of llvm IR */
   auto llvm_pointer= llvm::PointerType::get(*llvm_context, /*AddressSpace=*/0);
-  llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), { llvm_pointer }, /*isVarArg=*/true);
-  llvm::Function *printf_func = llvm::Function::Create(printf_type,llvm::Function::ExternalLinkage, "printf", llvm_module.get());
+  auto llvm_int64= llvm::Type::getInt64Ty(*llvm_context);
+
+  llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), { llvm_pointer, llvm_int64 }, /*isVarArg=*/true);
+  llvm::Function *printf_func = llvm::Function::Create(printf_type,llvm::Function::ExternalLinkage, "delight_print", llvm_module.get());
   /* end define printf for later linkage on top of llvm IR */
   
 
@@ -825,9 +827,15 @@ int main() {
 
       llvm_builder.CreateStore(abc, llvm_alloca_inst);
 
-      llvm::Value* myStrPtr = llvm_builder.CreateGlobalString("methinks");
-      
-      llvm_builder.CreateCall(printf_func, myStrPtr);
+
+      char mystr[8] = { 'm', 'e', 't', 'h', 'i', 'n', 'k', 's' };
+
+      llvm::Value* myStrPtr = llvm_builder.CreateGlobalString(mystr);
+
+      llvm::Value *mystr_length = llvm::ConstantInt::get(
+          llvm::Type::getInt64Ty(*llvm_context), 8);
+           
+      llvm_builder.CreateCall(printf_func, { myStrPtr, mystr_length });
 
       // llvm::call
 
