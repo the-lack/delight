@@ -64,6 +64,9 @@ it is not obvious to me why the entrypoint to the program is called "main". is t
 
 todo-like function in the language itself. finding not implemented edge cases can be hard in jira tickets / elsewhere.
 
+how should strings behave in the language? null termination is the standard but has it's problems (e.g. O(n) lookup of length). there are Pascal-like length-prefixed strings. there's also baking into executable vs runtime strings.
+should their be ability to modify string on the fly? access singular characters? increase it's size?
+
 --- peak c++ observations
 
 Peak reflection, unconsting the const.
