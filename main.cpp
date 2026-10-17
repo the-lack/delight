@@ -7,6 +7,9 @@
 #include <ios>
 // #include <llvm/IR/Function.h>
 // #include <llvm/Support/raw_ostream.h>
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/IR/Metadata.h>
+#include <llvm/Support/Format.h>
 #include <llvm/TargetParser/Triple.h>
 #include <map>
 #include <string>
@@ -649,9 +652,19 @@ int main() {
 
   llvm::BasicBlock *BB = llvm::BasicBlock::Create(*llvm_context, "entry",
   MainFunc);
+
+  MainFunc->setDSOLocal(true);
+
+  
   llvm_builder.SetInsertPoint(BB);
 
-  llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+
+  /* define printf for later linkage on top of llvm IR */
+  auto llvm_pointer= llvm::PointerType::get(*llvm_context, /*AddressSpace=*/0);
+  llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), { llvm_pointer }, /*isVarArg=*/true);
+  llvm::Function *printf_func = llvm::Function::Create(printf_type,llvm::Function::ExternalLinkage, "printf", llvm_module.get());
+  /* end define printf for later linkage on top of llvm IR */
+  
 
   printf("start");
   std::fstream entrypoint_file_stream;
@@ -807,12 +820,37 @@ int main() {
           llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context),
                                  right_int);
 
-      llvm_builder.CreateAdd(llvm_left, llvm_right);
+      auto abc = llvm_builder.CreateAdd(llvm_left, llvm_right);
+      llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+
+      llvm_builder.CreateStore(abc, llvm_alloca_inst);
+
+      llvm::Value* myStrPtr = llvm_builder.CreateGlobalString("methinks");
+      
+      llvm_builder.CreateCall(printf_func, myStrPtr);
+
+      // llvm::call
+
+      // llvm_builder.CreateStore(Value *Val, Value *Ptr, const LoadStoreInstProperties &Props)
+
+      // llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+      
+
       // break;
     // }
   // };
 
       printf("dupa3");
+
+      // MainFunc->setReturnDoesNotAlias()
+      //
+    // auto return_value = llvm::Type::getInt32Ty()
+    // builder.ge
+    auto return_value = llvm_builder.getInt32(0);
+    llvm_builder.CreateRet(return_value);
+
+  // llvm_builder.return
+      
   std::error_code EC;
   llvm::raw_fd_ostream dest("output.ll", EC);
 
