@@ -74,6 +74,7 @@ enum class TokenKind {
   Addition,
   Assignment,
   Delimiter,
+  Print,
 };
 
 enum class TokenDefinitionPredicateResult {
@@ -873,3 +874,67 @@ int main() {
 
   return 0;
 };
+
+// ast stuff
+//
+// expression = identifier '=' mathy
+// mathy = ""
+//
+
+class Parser {
+  std::vector<Token> tokens;
+  size_t current_index = 0;
+
+  Parser(std::vector<Token> tokens) { this->tokens = tokens; };
+
+public:
+  void parseStuff() {
+    // assignment();
+  }
+
+private:
+  void assignment() {
+    // assignment();
+  }   
+  // void value() {
+
+  // };
+};
+
+class Expression {};
+
+class BinaryExpression {
+
+  Expression left;
+  Token operator_guy;
+  Expression right;
+
+  BinaryExpression(Expression left, Token operator_guy, Expression right) {
+    this->left = left;
+    this->right = right;
+    this->operator_guy = operator_guy;
+  }
+};
+
+
+// class AstRoot {
+
+//   BinaryExpression(Expression left, Token operator_guy, Expression right) {
+//     this->left = left;
+//     this->right = right;
+//     this->operator_guy = operator_guy;
+//   }
+// };
+
+// class AssignmentExpression {
+
+//   Expression left;
+//   Token operator_guy;
+//   Expression right;
+
+//   BinaryExpression(Expression left, Token operator_guy, Expression right) {
+//     this->left = left;
+//     this->right = right;
+//     this->operator_guy = operator_guy;
+//   }
+// }

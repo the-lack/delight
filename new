@@ -336,3 +336,30 @@ what does validity even mean?
 hmm i guess token validity itself is something different from validity i guess.
 
 but both can be during intermediate step
+
+
+
+
+### ast creation.
+
+how do I imagine AST creation?
+
+I guess there's a list of tokens.
+
+I gotta go over each token.
+
+I do not know what's the first token at all.
+
+I should have something like a Parser class and call Parser.parse(token array)
+
+
+Parser should have internally a general parseExpression method.
+
+Expression can manifest itself in multiple ways. Expression is the most primitive foundation that exists in the language.
+
+ParseExpression should find out what expression exactly is to be parsed using BNF grammar type stuff.
+
+Probably first token will need an evaluation via a lookup of sorts. I imagine in my language there exists
+
+a) assignments with any arbitrary math logic
+b) print calls
