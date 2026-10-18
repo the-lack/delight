@@ -643,30 +643,33 @@ int main() {
   llvm::TargetOptions llvm_target_options;
   auto llvm_reloc_model = std::optional<llvm::Reloc::Model>();
 
-  llvm::TargetMachine *TargetMachine =
-      Target->createTargetMachine(name, llvm_cpu, llvm_features, llvm_target_options, llvm_reloc_model);
+  llvm::TargetMachine *TargetMachine = Target->createTargetMachine(
+      name, llvm_cpu, llvm_features, llvm_target_options, llvm_reloc_model);
   llvm_module->setDataLayout(TargetMachine->createDataLayout());
 
-  llvm::FunctionType *FuncType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), {}, false);
-  llvm::Function *MainFunc = llvm::Function::Create(FuncType,llvm::Function::ExternalLinkage, "main", llvm_module.get());
+  llvm::FunctionType *FuncType =
+      llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), {}, false);
+  llvm::Function *MainFunc = llvm::Function::Create(
+      FuncType, llvm::Function::ExternalLinkage, "main", llvm_module.get());
 
-  llvm::BasicBlock *BB = llvm::BasicBlock::Create(*llvm_context, "entry",
-  MainFunc);
+  llvm::BasicBlock *BB =
+      llvm::BasicBlock::Create(*llvm_context, "entry", MainFunc);
 
   MainFunc->setDSOLocal(true);
 
-  
   llvm_builder.SetInsertPoint(BB);
 
-
   /* define printf for later linkage on top of llvm IR */
-  auto llvm_pointer= llvm::PointerType::get(*llvm_context, /*AddressSpace=*/0);
-  auto llvm_int64= llvm::Type::getInt64Ty(*llvm_context);
+  auto llvm_pointer = llvm::PointerType::get(*llvm_context, /*AddressSpace=*/0);
+  auto llvm_int64 = llvm::Type::getInt64Ty(*llvm_context);
 
-  llvm::FunctionType *printf_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), { llvm_pointer, llvm_int64 }, /*isVarArg=*/true);
-  llvm::Function *printf_func = llvm::Function::Create(printf_type,llvm::Function::ExternalLinkage, "delight_print", llvm_module.get());
+  llvm::FunctionType *printf_type =
+      llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context),
+                              {llvm_pointer, llvm_int64}, /*isVarArg=*/true);
+  llvm::Function *printf_func =
+      llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage,
+                             "delight_print", llvm_module.get());
   /* end define printf for later linkage on top of llvm IR */
-  
 
   printf("start");
   std::fstream entrypoint_file_stream;
@@ -798,67 +801,65 @@ int main() {
   bool shall_we_flush = false;
 
   // for (auto token : tokens_found) {
-    // current_grammar_thing.push_back(token);
-    // current_grammar_thing_kind.push_back(token.kind);
+  // current_grammar_thing.push_back(token);
+  // current_grammar_thing_kind.push_back(token.kind);
 
-      // printf("dupa");
-    // if (tokens_found == grammar_rules[0]) {
-      printf("dupa2");
+  // printf("dupa");
+  // if (tokens_found == grammar_rules[0]) {
+  printf("dupa2");
 
-      uint64_t left_int;
-      uint64_t right_int;
-      bool parsed_left =
-          try_parse_uint_64(tokens_found[2].value, left_int);
-      bool parsed_right =
-          try_parse_uint_64(tokens_found[4].value, right_int);
+  uint64_t left_int;
+  uint64_t right_int;
+  bool parsed_left = try_parse_uint_64(tokens_found[2].value, left_int);
+  bool parsed_right = try_parse_uint_64(tokens_found[4].value, right_int);
 
-      ASSERT_THAT("parsed", parsed_left && parsed_right);
-      printf("left: %lu", left_int);
-      printf("right: %lu", right_int);
-      
-      llvm::Value *llvm_left = llvm::ConstantInt::get(
-          llvm::Type::getInt32Ty(*llvm_context), left_int);
-      llvm::Value *llvm_right =
-          llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context),
-                                 right_int);
+  ASSERT_THAT("parsed", parsed_left && parsed_right);
+  printf("left: %lu", left_int);
+  printf("right: %lu", right_int);
 
-      auto abc = llvm_builder.CreateAdd(llvm_left, llvm_right);
-      llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+  llvm::Value *llvm_left =
+      llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), left_int);
+  llvm::Value *llvm_right =
+      llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), right_int);
 
-      llvm_builder.CreateStore(abc, llvm_alloca_inst);
+  auto abc = llvm_builder.CreateAdd(llvm_left, llvm_right);
+  llvm::AllocaInst *llvm_alloca_inst =
+      llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
 
+  llvm_builder.CreateStore(abc, llvm_alloca_inst);
 
-      char mystr[8] = { 'm', 'e', 't', 'h', 'i', 'n', 'k', 's' };
+  char mystr[8] = {'m', 'e', 't', 'h', 'i', 'n', 'k', 's'};
 
-      llvm::Value* myStrPtr = llvm_builder.CreateGlobalString(mystr);
+  llvm::Value *myStrPtr = llvm_builder.CreateGlobalString(mystr);
 
-      llvm::Value *mystr_length = llvm::ConstantInt::get(
-          llvm::Type::getInt64Ty(*llvm_context), 8);
-           
-      llvm_builder.CreateCall(printf_func, { myStrPtr, mystr_length });
+  llvm::Value *mystr_length =
+      llvm::ConstantInt::get(llvm::Type::getInt64Ty(*llvm_context), 8);
 
-      // llvm::call
+  llvm_builder.CreateCall(printf_func, {myStrPtr, mystr_length});
 
-      // llvm_builder.CreateStore(Value *Val, Value *Ptr, const LoadStoreInstProperties &Props)
+  // llvm::call
 
-      // llvm::AllocaInst *llvm_alloca_inst = llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
-      
+  // llvm_builder.CreateStore(Value *Val, Value *Ptr, const
+  // LoadStoreInstProperties &Props)
 
-      // break;
-    // }
+  // llvm::AllocaInst *llvm_alloca_inst =
+  // llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
+
+  // break;
+  // }
   // };
 
-      printf("dupa3");
+  printf("dupa3");
 
-      // MainFunc->setReturnDoesNotAlias()
-      //
-    // auto return_value = llvm::Type::getInt32Ty()
-    // builder.ge
-    auto return_value = llvm_builder.getInt32(0);
-    llvm_builder.CreateRet(return_value);
+  // MainFunc->setReturnDoesNotAlias()
+  //
+  // auto return_value = llvm::Type::getInt32Ty()
+  // builder.ge
+  auto return_value = llvm_builder.getInt32(0);
+  llvm_builder.CreateRet(return_value);
 
   // llvm_builder.return
-      
+
   std::error_code EC;
   llvm::raw_fd_ostream dest("output.ll", EC);
 
