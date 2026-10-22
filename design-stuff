@@ -1,0 +1,131 @@
+people want to interact with a computer.
+
+computer is in tl;dr compute + data = data
+
+programming languages are problematic and very annoying, a lot of them.
+
+lots of implicit gimmicks, unclear rules, need to learn arbitrary trivia knowledge to not fall into pitfalls.
+some of this stuff is kept because of backwards compatibility reason, some is just poor design.
+
+i am wondering whether there could be a way other than programming language to interact with a computer and create software.
+
+there could be diagrams, there could be interactive stuff, there could be vague-llm-text stuff -> software, there could be some sort of declarative DSL yaml but better but those never work and in the end of the day you need to write imperative stuff.
+
+programming languages or more generally - some sort of text-based medium has to exist. humans communicate by text and speech and literacy is a base skill.
+
+language / grammar / syntax / semantic rules are required for people to actually understand what's going on.
+
+if one piece of medium can have arbitrary meaning (e.g. sth like undefined behavior in C) then it's not sustainable.
+
+it's the same if the meaning is not exactly arbitrary but heavily relies on context of some sort (compiler flags, order of things in the struct, env variables).
+
+
+it is great if a word in the language intrinsic has only one meaning (not like cpp static or other mess).
+it's nice if you can objectively state something and it is true.
+the definition of good argument in philosophical context is when there cannot be found a set of circumstances that makes a statement false.
+
+"it's cold in USA" -> im in Cali and it's hot for us
+"thieves are bad people" -> what about this guy that stole cancer medicine for his family member
+
+"it doesn't really matter whether you use const smth = () => {} or a function " -> this won't work in librarya XYZ because const doesnt have the "this" keyword
+
+"well you can just run XYZ style in css" -> this won't work in Safari
+
+programming language of some sort is probably necessary.
+
+actually i believe that the best way to interact with the machine is to be as close to how the machine works, so cpu and also ram.
+
+there could be ways in which you build abstractions but this cannot be unlimited, i think, because then you end up with something like DSL for everything that's built and every codebase looks different.
+
+well maybe that's the point, why should every codebase be the same? that might matter if you're looking for a broader adoption in enterprise stuff.
+
+on the other hand you need to assume that iterability (not as in scrum iterations but as spanning a significant time frames) matters a lot. your program has to work today, tomorrow, in 5 years and it would be good if the gap between
+
+1) someone that hasn't seen the codebase nor the language
+2) someone who knows codebase and has many years of experience working with it and the language
+
+would be small.
+
+on the other hand you could draw a graph that represents learning curve that's somewhat flat:
+
+ability
+|                                      
+|                                      
+|---------------------------------- <- the learning curve
+|                                      
+|---------------------------------- time
+
+
+is it actually a good thing?
+
+one thing I heard once is that "maintainabiltiy of a project heavily depends on ability of the maintaining person to maintain".
+
+you might actually not want to create language that's easy either, you might want to dedicate the programming language to new people or you might dedicate it to people that are actually skilled and tell the rest "get good"
+
+---
+
+one of many important properties of a programming language is it's semantics and syntax.
+
+one thing i heavily dislike is noisy syntax. most languages can be written in a way that's not noisy but often this requires a lot of effort (look: my custom dsl/bdd for testing)
+
+---
+
+python syntax is kinda nice, ruby too. unfortunately those are dynamic and it's hard to track how the data flows, and lot of programming is about how data flows.
+
+would be nice to have a statically typed language.
+
+---
+
+another problematic thing with languages is how unusable they are.
+very often programming language usage is heavily dependent on specific IDE (look java), or require lsp (because code doesn't communicate nor data flows well or naming in the language is highly ambigous)
+
+language should be greppable. this might seem like it introduces another tooling dependency but in reality search over stream of characters is one of the most basic operations provided by all sorts of different tools.
+
+language should be editor-independent.
+the compiler should be the user interface of the program - if an error is detected during compile time the error message should clear display
+1) whats wrong
+2) where
+3) why?
+4) how to fix it
+5) potentially guess the intention of the user and where the point of misunderstanding might come from (if it was not a typo), that's why the syntax cannot mean 20 different things
+
+compile time should be so fast that the developer wants to run it all the time, could even be a simple bash loop that recompiles the whole program (no incremental builds or magical caching under the hood). same rule as any sane person familiar with testing, can't take too long.
+generally compile time <=1s is good for complex programs.
+
+one way to make sure language is editor independent and searchable would be to drop any kind of 'auto' keywords or python-like typeless declarations.
+this unfortunately adds noise for person that knows what they're doing but adds value to person that will have to read it to understand how data flows.
+
+one thing could be to use the hungarian notation but it's ugly as hell.
+
+and also the primary thing is not the typechecking (this is what compiler does)
+but giving the developer ability to understand program, find definitions wihout lsp, understand implementation better, understand how to use a thing better e.g. function params etc.
+
+there could be a requirement of sort that would say something like: the type of a thing and the typing has to be in the same file?
+
+---
+
+types must be declared, not inferred
+
+this would be too verbose:
+		type Func1Result = {value: i32, error: string}
+		type Func2Result = {items: []string, count: i32}
+		type Func3Result = {processed: bool}
+
+		func1() -> Func1Result = ...
+		func2() -> Func2Result = ...
+		func3() -> Func3Result = ...
+
+this would seem nice:
+	func1() -> {value: i32, error: string} = ...
+
+language would need to have very nice and smooth return type notation
+
+func1() -> (i32, string) =
+  return (5, "error")
+
+func1() =
+  return (5, "error") as (i32, string)
+although requires implementation reading therefore not cool
+
+
+well, what about -> Type1 that has Type2 that has Type3 that has Type 4

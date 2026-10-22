@@ -69,12 +69,14 @@ enum class TokenKind {
   Identifier,
   IntegerLiteral,
   FloatLiteral,
+  StringLiteral,
   EqualLiteral,
   StatementEnding,
   Addition,
   Assignment,
   Delimiter,
   Print,
+  END_OF_TOKENS,
 };
 
 enum class TokenDefinitionPredicateResult {
@@ -875,46 +877,119 @@ int main() {
   return 0;
 };
 
+
+// My parser stuff
+//
+
+
+static int token_index = 0;
+
+void tokens_to_ast() {
+  
+}
+
+void parse_assignment() {
+  
+}
+
+
+
+// s = statement;
+// statements can refer to each other. or maybe variables rather. eg s1 = 1, and s2 = 1 + s1.
+//
+// the tree elements wont have the same interface necessarily (meh), some will be binary operators, some will have multiple pointers to other thigs.
+//
+// we should go every each token and just do simple recursive descent parsing. main thing about programming languages is state and state manipulation.
+// so probably I should focus on assignment and remembering where certain values are (allocation + identifier matching)
+//
+// another thing i would like is to have mapping of all symbols in my stdlib. might be too early for function calls tho.
+// although maybe not. function calls and strings.
+//
+//
+// 
+//           global scope
+//        /  |   |   |    \
+//       s1  s2  s3  s4   s5
+//                
+//                
+//                
+//                
+//                
+//                
+//                
+//                
+//                
+//                
+//                
+             
+
 // ast stuff
 //
 // expression = identifier '=' mathy
 // mathy = ""
 //
 
-class Parser {
-  std::vector<Token> tokens;
-  size_t current_index = 0;
+// class Parser {
+//   std::vector<Token> tokens;
+//   // std::vector<Statements> tokens;
+//   size_t current_index = 0;
 
-  Parser(std::vector<Token> tokens) { this->tokens = tokens; };
+//   Parser(std::vector<Token> tokens) { this->tokens = tokens; };
 
-public:
-  void parseStuff() {
-    // assignment();
-  }
+// public:
+//   void parseStuff() {
+//     assignment();
+//   }
 
-private:
-  void assignment() {
-    // assignment();
-  }   
-  // void value() {
+// private:
 
-  // };
-};
+//   // identifier
+//   void assignment() {
 
-class Expression {};
+//     match()
+//     // assignment();
+//   }
 
-class BinaryExpression {
+//   Token peek() {
+//     return tokens[current_index + 1];
+//   }
 
-  Expression left;
-  Token operator_guy;
-  Expression right;
+//   bool match() {
+//     return tokens[current_index + 1].kind;
+//   }
 
-  BinaryExpression(Expression left, Token operator_guy, Expression right) {
-    this->left = left;
-    this->right = right;
-    this->operator_guy = operator_guy;
-  }
-};
+//   // bool check(ToolKind type) {
+//   //   // if (isAtEnd()) return false;
+//   //   return peek().type == type;
+//   // }
+  
+//   bool isAtEnd() {
+//     return this->peek().kind == TokenKind::END_OF_TOKENS;
+//   }
+
+//   void advance() {
+//   }   
+  
+  
+//   // void value() {
+
+//   // };
+// };
+
+// class Expression {};
+
+// class BinaryExpression {
+
+//   Expression left;
+//   Token operator_guy;
+//   Expression right;
+
+//   BinaryExpression(Expression left, Token operator_guy, Expression right) {
+//     this->left = left;
+//     this->right = right;
+//     this->operator_guy = operator_guy;
+//   }
+// };
 
 
 // class AstRoot {

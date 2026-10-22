@@ -1,2 +1,17 @@
 abcdef = 123 + 456
 
+my_string_stuff = /my thingies
+
+print my_string_stuff
+
+my_string_stuff2 = /my integer thingies ?abcdef strings
+
+my_string_stuff3 = /?my_string_stuff my integer ?abcdef cute
+
+print my_string_stuff3
+
+print my_string_stuff2
+
+print my_string_stuff
+
+my_string_stuff5 = /stuff I will expect
