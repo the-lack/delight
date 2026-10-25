@@ -29,10 +29,10 @@ void move_cursor_left() {
   printf("\E[1D");
 }
 
+
 void move_cursor_right() {
   printf("\E[1C");
 }
-
 
 void move_cursor(int line, int column) {
   printf("\E[%d;%dH", line, column);
@@ -65,6 +65,34 @@ void enable_raw_termios_state() {
   tcsetattr(STDIN_FILENO, TCSANOW, &term_config);  
 }
 
+char* get_cursor_position() {
+  char input_buffer[16];
+  size_t i =0;
+    fflush(stdout);
+  restore_default_termios_state();
+    fflush(stdout);
+  printf("\E[6n");
+
+  for(; input_buffer[i] != 'R' && i < 16; i++) {
+
+    read(STDIN_FILENO, input_buffer[i], 1);
+  }
+
+  printf("%.*s", i, input_buffer);
+    fflush(stdout);
+  enable_raw_termios_state();
+    fflush(stdout);
+  return input_buffer;
+}
+
+
+
+
+enum Modes {
+  Normal,
+  Edit
+};
+
 
 int
 main(int argc, char** argv)
@@ -77,6 +105,7 @@ main(int argc, char** argv)
   int stdin = 0;
   int iterator = 0;
   char current_character;
+  enum Modes edit_mode = Normal;
   struct sigaction act = { 0 };
 
   int sig_int = 2;
@@ -145,25 +174,40 @@ main(int argc, char** argv)
   while (1)
   {
     read(STDIN_FILENO, input_buffer, 1);
-    current_character = input_buffer[0];
+    current_character = input_buffer[0];    
 
-    if(current_character == 'k') {
-      move_cursor_up();
-    }
-
-    if(current_character == 'j') {
-      move_cursor_down();
-    }
-
-    if(current_character == 'h') {
-      move_cursor_left();
-    }
-
-    if(current_character == 'l') {
-      move_cursor_right();
-    }    
-    fflush(stdout);
+// 4|R|[|4|4|;|1|1|8|R||[|4|4|;|1|2|2|R|[|4|4|;|1|2|5|R||[|4|4|;|1|2|9|R|[|4|4|;|1|3|3|R||[|4|4|;|1|3|7|R|[|4|4|;|1|4|0|R||[|4|4|;|1|4|4|R|[|4|4|;|1|4|8|R||[|4|4|;|1|5|2|R|[|4|4|;|1|5|5|R||[|4|4|;|1|5|9|R|[|4|4|;|1|6|3|R||[|4|4|;|1|6|7|R|[|4|4|;|1|7|0|R||[|4|4|;|1|7|4|R|[|4|4|;|1|7|8|R||[|4|4|;|1|8|2|R|[|4|4|;|1|8|5|R||[|4|4|;|1|8|9|R|[|4|4|;|5|R||[|4|4|;|9|R|[|4|4|;|1|2|R|[|4|4|;|1
     
+  
+    if(edit_mode == Normal)
+    {
+      if(current_character == 'k') {
+        move_cursor_up();
+      }
+
+      if(current_character == 'j') {
+        move_cursor_down();
+      }
+
+      if(current_character == 'h') {
+        move_cursor_left();
+      }
+
+      if(current_character == 'l') {
+        move_cursor_right();
+      }
+
+      if(current_character == 'z') {
+        get_cursor_position();
+      }
+    }
+
+    if(edit_mode == Edit) {
+      
+    }
+
+    current_character = '\0';
+    fflush(stdout); 
     iterator++;
   }
 
