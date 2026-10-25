@@ -27,12 +27,16 @@ void handle_sigaction(int sig, siginfo_t *info, void *ucontext) {
     use_rmcup();
 }
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
   char *relative_file_path_for_opening;
   char cwd[2048];
   char full_file_path[4096];
   char file_content[4096];
-  char input_buffer[4096];
+  char input_buffer[64];
+  int stdin = 0;
+  int iterator = 0;
 
   struct sigaction act = { 0 };
 
@@ -73,7 +77,8 @@ int main(int argc, char** argv) {
   printf("\nfull file path: %s", full_file_path);
 
   file_handle = fopen(full_file_path, "r+");
-  if(file_handle == 0) {
+  if(file_handle == 0)
+  {
     printf("\ncould not open file");
     return 0;
   }
@@ -92,7 +97,14 @@ int main(int argc, char** argv) {
   move_cursor(1, 1);
   printf("%s", file_content);
   move_cursor(1, 1);
-  scanf(input_buffer);
+
+  iterator = 0; 
+  while (iterator < 20)
+  {
+    read(stdin, input_buffer, 1);
+    printf("char");
+    iterator++;
+  }
   use_rmcup();
 
   return 0;
