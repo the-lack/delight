@@ -18,8 +18,21 @@ void erase_screen() {
 }
 
 void move_cursor_up() {
-  printf("\E[A");
+  printf("\E[1A");
 }
+
+void move_cursor_down() {
+  printf("\E[1B");
+}
+
+void move_cursor_left() {
+  printf("\E[1D");
+}
+
+void move_cursor_right() {
+  printf("\E[1C");
+}
+
 
 void move_cursor(int line, int column) {
   printf("\E[%d;%dH", line, column);
@@ -64,6 +77,7 @@ main(int argc, char** argv)
   int stdin = 0;
   int stdout = 0;
   int iterator = 0;
+  char current_character;
   struct sigaction act = { 0 };
 
   int sig_int = 2;
@@ -119,24 +133,40 @@ main(int argc, char** argv)
   printf("\n---- END\n");
 
   use_smcup();
+  enable_raw_termios_state();
   erase_screen();
   move_cursor(1, 1);
-  move_cursor_up();
   printf("%s", file_content);
-  move_cursor_up();
-  move_cursor_up();
-  move_cursor_up();
-  enable_raw_termios_state();
+  move_cursor(1, 1);
   fflush(stdout);
 
   iterator = 0; 
-  while (iterator < 4)
+  while (iterator < 20)
   {
     read(stdin, input_buffer, 1);
-    printf("char");
+    current_character = input_buffer[0];
+
+    if(current_character == 'k') {
+      move_cursor_up();
+    }
+
+    if(current_character == 'j') {
+      move_cursor_down();
+    }
+
+    if(current_character == 'h') {
+      move_cursor_left();
+    }
+
+    if(current_character == 'l') {
+      move_cursor_right();
+    }    
+    fflush(stdout);
+    
     iterator++;
   }
 
+  restore_default_termios_state();
   use_rmcup();
 
   return 0;
