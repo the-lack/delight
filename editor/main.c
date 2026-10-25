@@ -1,7 +1,7 @@
 
 #include <signal.h>
 #include <stdio.h>
- #include <stdlib.h>
+#include <stdlib.h>
 #include <unistd.h>
 
      #include <unistd.h>
@@ -10,14 +10,22 @@ void use_smcup() {
   printf("\E[?1049h");
 }
 
+
 void use_rmcup() {
   printf("\E[?1049l");
+}
+
+void erase_screen() {
+  printf("\E[2J");
+}
+
+void move_cursor(int line, int column) {
+  printf("\E[%d;%dH", line, column);
 }
 
 void handle_sigaction(int sig, siginfo_t *info, void *ucontext) {
     use_rmcup();
 }
-
 
 int main(int argc, char** argv) {
   char *relative_file_path_for_opening;
@@ -80,6 +88,10 @@ int main(int argc, char** argv) {
   printf("\n---- END\n");
 
   use_smcup();
+  erase_screen();
+  move_cursor(1, 1);
+  printf("%s", file_content);
+  move_cursor(1, 1);
   scanf(input_buffer);
   use_rmcup();
 
