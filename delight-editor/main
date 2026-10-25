@@ -1,0 +1,12 @@
+# main method, lang has to have a main method 100%
+
+function main() -> int64:
+	# <here goes whatever indentation one wants as we already know the ending
+	
+	return 0 # auto type inference from 0 based on return type ?
+
+#   <something like this below should fail probably when it comes to new line returns
+#	return
+#		0
+
+end main # the ending has to contain a name of identifier that's ending
