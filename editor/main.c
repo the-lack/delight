@@ -6,11 +6,11 @@
 #include <termios.h>
 
 void use_smcup() {
-  printf("\E[?1049h");
+  write(STDOUT_FILENO, "\E[?1049h", 8);  
 }
 
 void use_rmcup() {
-  printf("\E[?1049l");
+  write(STDOUT_FILENO, "\E[?1049l", 8);  
 }
 
 void erase_screen() {
@@ -40,21 +40,21 @@ void move_cursor(int line, int column) {
 
 struct termios orig_termios;  
 void restore_default_termios_state() {
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+  tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
 }
 
 void handle_sigaction(int sig, siginfo_t *info, void *ucontext) {
-    use_rmcup();
+    fflush(stdout);
     restore_default_termios_state();
+    use_rmcup();
+    _exit(0);
 }
-
 
 void enable_raw_termios_state() {
   struct termios term_config = { 0 };
 
   tcgetattr(STDIN_FILENO, &orig_termios);
   atexit(restore_default_termios_state);
-
   term_config = orig_termios;
 
   term_config.c_lflag &= ~(ICANON | ECHO);
@@ -62,7 +62,7 @@ void enable_raw_termios_state() {
   term_config.c_cc[VMIN] = 1;
   term_config.c_cc[VTIME] = 0;
 
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &term_config);  
+  tcsetattr(STDIN_FILENO, TCSANOW, &term_config);  
 }
 
 
@@ -75,7 +75,6 @@ main(int argc, char** argv)
   char file_content[4096];
   char input_buffer[64];
   int stdin = 0;
-  int stdout = 0;
   int iterator = 0;
   char current_character;
   struct sigaction act = { 0 };
@@ -132,6 +131,8 @@ main(int argc, char** argv)
   printf("%s", file_content);
   printf("\n---- END\n");
 
+  fflush(stdout);
+
   use_smcup();
   enable_raw_termios_state();
   erase_screen();
@@ -141,9 +142,9 @@ main(int argc, char** argv)
   fflush(stdout);
 
   iterator = 0; 
-  while (iterator < 20)
+  while (1)
   {
-    read(stdin, input_buffer, 1);
+    read(STDIN_FILENO, input_buffer, 1);
     current_character = input_buffer[0];
 
     if(current_character == 'k') {
