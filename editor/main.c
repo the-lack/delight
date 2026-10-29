@@ -1,4 +1,3 @@
-
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +13,7 @@ void use_rmcup() {
 }
 
 void erase_screen() {
-  printf("\E[2J");
+  write(STDOUT_FILENO, "\E[2J", 4);
 }
 
 void move_cursor_up() {
@@ -65,28 +64,10 @@ void enable_raw_termios_state() {
   tcsetattr(STDIN_FILENO, TCSANOW, &term_config);  
 }
 
-char* get_cursor_position() {
-  char input_buffer[16];
-  size_t i =0;
-    fflush(stdout);
-  restore_default_termios_state();
-    fflush(stdout);
-  printf("\E[6n");
-
-  for(; input_buffer[i] != 'R' && i < 16; i++) {
-
-    read(STDIN_FILENO, input_buffer[i], 1);
-  }
-
-  printf("%.*s", i, input_buffer);
-    fflush(stdout);
-  enable_raw_termios_state();
-    fflush(stdout);
-  return input_buffer;
+void get_cursor_position() {
+    char get_cursor_position_sequence[] = "\E[6n";
+    write(STDOUT_FILENO, get_cursor_position_sequence, sizeof(get_cursor_position_sequence));
 }
-
-
-
 
 enum Modes {
   Normal,
@@ -174,10 +155,7 @@ main(int argc, char** argv)
   while (1)
   {
     read(STDIN_FILENO, input_buffer, 1);
-    current_character = input_buffer[0];    
-
-// 4|R|[|4|4|;|1|1|8|R||[|4|4|;|1|2|2|R|[|4|4|;|1|2|5|R||[|4|4|;|1|2|9|R|[|4|4|;|1|3|3|R||[|4|4|;|1|3|7|R|[|4|4|;|1|4|0|R||[|4|4|;|1|4|4|R|[|4|4|;|1|4|8|R||[|4|4|;|1|5|2|R|[|4|4|;|1|5|5|R||[|4|4|;|1|5|9|R|[|4|4|;|1|6|3|R||[|4|4|;|1|6|7|R|[|4|4|;|1|7|0|R||[|4|4|;|1|7|4|R|[|4|4|;|1|7|8|R||[|4|4|;|1|8|2|R|[|4|4|;|1|8|5|R||[|4|4|;|1|8|9|R|[|4|4|;|5|R||[|4|4|;|9|R|[|4|4|;|1|2|R|[|4|4|;|1
-    
+    current_character = input_buffer[0];
   
     if(edit_mode == Normal)
     {

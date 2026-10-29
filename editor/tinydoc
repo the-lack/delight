@@ -1,0 +1,97 @@
+( ) write vs printf, kernelspace vs userspace buffering
+
+( ) probably should delete this crap code
+
+( )
+
+i need to delete chars
+
+terminal layout (e.g width 80)
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+file layout:
+
+XXXXXXXXXXXXXXXXXXXX <- fn signature
+X                    <- brace
+XXXXXXXXXXX          <- some declaration 
+XXXXXXXXXXXXXXX      <- other stuff
+X                    <- end brace
+
+simple functionality:
+- vim-like normal mode
+- vim-like insert mode
+
+
+1) normal mode
+a) jklh navigation (nothing else)
+b) should be be across the whole buffer layout
+c) full horizontall scroll (no-autowrap)
+d) full vertical scroll (when getting to the terminal end and pressing up/down)
+e) ability to save a file (probably auto-save without undo tbh)
+f) ability to exit a file
+f) ability to choose any file
+
+2) input mode:
+a) should have non-full cursor (vim-like)
+b) can move only within file buffer text
+c) -> backspace deletes stuff
+d) -> other characters can be inserted (abcdefghijkl) + [1-9], probably a whitelist
+e) -> newline insertion
+
+
+
+memory layout stuff.
+how to avoid fragmentation? rope struct?
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+function add(a: number, b: number): number {\nreturn a + b;\n}\n
+
+the naive impl would be to split line by line (by \n)
+allocate array with indexes that match line number [0],[1].
+
+then cursor is tracked veritcally to access proper indices
+
+then horizontally (again, indices) to track where the change takes place
+
+> important: when going into edit mode and cursor is placed on non-editable part e.g.
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX <- terminal size
+
+XXXXXXXXXXXXX                     O       
+^                                 ^
+file content                      users cursor
+
+then the cursor shall be aligned to the file content on the left.
+
+> important:
+if all characters will end on the line then the line should be deallocated and all indices adjusted somehow. this would also mean that \n shouldnt be stored in the end but in the beginning of a line to match cursor placement when deleting stuff
+(maybe).
+the problem might be reallocation associated with that kind of a thing tbh if we'd want to have a continous chunk of memory.
+maybe this would mean that every line should have a pointer to the next line?
+
+> what happens when user inserts the text in the middle of a line?
+index is calculated, whole line is reallocated with currently read input placed under cursor
+
+
+naive implementation but imo alright, not gonna edit 10k lines of files
