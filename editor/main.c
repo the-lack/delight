@@ -85,7 +85,7 @@ main(int argc, char** argv)
   char input_buffer[64];
   int stdin = 0;
   int iterator = 0;
-  char current_character;
+  char *current_character;
   enum Modes edit_mode = Normal;
   struct sigaction act = { 0 };
 
@@ -155,36 +155,42 @@ main(int argc, char** argv)
   while (1)
   {
     read(STDIN_FILENO, input_buffer, 1);
-    current_character = input_buffer[0];
+    current_character = input_buffer;
   
     if(edit_mode == Normal)
     {
-      if(current_character == 'k') {
+      if(*current_character == 'k') {
         move_cursor_up();
       }
 
-      if(current_character == 'j') {
+      if(*current_character == 'j') {
         move_cursor_down();
       }
 
-      if(current_character == 'h') {
+      if(*current_character == 'h') {
         move_cursor_left();
       }
 
-      if(current_character == 'l') {
+      if(*current_character == 'l') {
         move_cursor_right();
       }
 
-      if(current_character == 'z') {
+      if(*current_character == 'z') {
         get_cursor_position();
       }
+
+      char esc = 27;
+      if(*current_character == 27) {
+        break;
+      }
+      
     }
 
     if(edit_mode == Edit) {
       
     }
 
-    current_character = '\0';
+    *current_character = '\0';
     fflush(stdout); 
     iterator++;
   }
