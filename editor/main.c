@@ -64,9 +64,25 @@ void enable_raw_termios_state() {
   tcsetattr(STDIN_FILENO, TCSANOW, &term_config);  
 }
 
-void get_cursor_position() {
-    char get_cursor_position_sequence[] = "\E[6n";
-    write(STDOUT_FILENO, get_cursor_position_sequence, sizeof(get_cursor_position_sequence));
+void get_cursor_position(int *col, int *row)
+{
+    char sequence[] = "\E[6n";
+    write(STDOUT_FILENO, sequence, sizeof(sequence) - 1);  
+    
+    if (getchar() != '\x1B') return 0;
+    if (getchar() != '\x5B') return 0;
+    
+    int in;
+    int ly = 0;
+    while ((in = getchar()) != ';')
+        ly = ly * 10 + in - '0';
+        
+    int lx = 0;
+    while ((in = getchar()) != 'R')
+        lx = lx * 10 + in - '0';
+        
+    *row = lx;
+    *col = ly;
 }
 
 enum Modes {
@@ -82,7 +98,8 @@ main(int argc, char** argv)
   char cwd[2048];
   char full_file_path[4096];
   char file_content[4096];
-  char input_buffer[64];
+  char keybind_input_buffer[64];
+  char new_input_content_buffer[2048];
   int stdin = 0;
   int iterator = 0;
   char *current_character;
@@ -154,8 +171,10 @@ main(int argc, char** argv)
   iterator = 0; 
   while (1)
   {
-    read(STDIN_FILENO, input_buffer, 1);
-    current_character = input_buffer;
+    read(STDIN_FILENO, keybind_input_buffer, 1);
+    current_character = keybind_input_buffer;
+    int row;
+    int col;
   
     if(edit_mode == Normal)
     {
@@ -175,8 +194,9 @@ main(int argc, char** argv)
         move_cursor_right();
       }
 
-      if(*current_character == 'z') {
-        get_cursor_position();
+      if(*current_character == 'i') {
+        get_cursor_position(&row, &col);
+        edit_mode = Edit;
       }
 
       char esc = 27;
@@ -187,6 +207,13 @@ main(int argc, char** argv)
     }
 
     if(edit_mode == Edit) {
+      char esc = 27;
+      if(*current_character == 27) {
+        break;
+      }
+
+
+
       
     }
 
