@@ -1,6 +1,6 @@
 # --- c++ config
 COMPILER              = gcc
-FLAG_VERSION          = -std=gnu89
+FLAG_VERSION          = -std=gnu99
 FLAG_WARNINGS         = -Wall -Wextra -Wunused-variable -Wpedantic -Wshadow -Wunused -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wformat-security
 FLAG_MAX_OPTIMIZATION =
 # -O3
