@@ -186,19 +186,24 @@ main(int argc, char** argv)
   move_cursor(1, 1);
   erase_screen();
   printf("%s", file_content);
-  fflush(stdout);
-  move_cursor(1, 1);
-
   /* split into lines */
+
+  char current_mode[128] = "normal";
 
   iterator = 0; 
   while (1)
   {
-    read(STDIN_FILENO, keybind_input_buffer, 1);
-    current_character = keybind_input_buffer;
     int row;
     int col;
   
+    get_cursor_position(&row, &col);
+    move_cursor(30, 1);
+    printf("mode %s", current_mode);  
+    move_cursor(row, col);
+    fflush(stdout);
+
+    read(STDIN_FILENO, keybind_input_buffer, 1);
+    current_character = keybind_input_buffer;
     if(edit_mode == Normal)
     {
       if(*current_character == 'k') {
@@ -218,8 +223,8 @@ main(int argc, char** argv)
       }
 
       if(*current_character == 'i') {
-        get_cursor_position(&row, &col);
         edit_mode = Edit;
+        strncpy(current_mode, "edital", sizeof("edital"));
         continue;
       }
 
@@ -233,7 +238,9 @@ main(int argc, char** argv)
     if(edit_mode == Edit) {
       char esc = 27;
       if(*current_character == 27) {
+        get_cursor_position(&row, &col);
         edit_mode = Normal;
+        strncpy(current_mode, "normal", sizeof("normal"));
         continue;
       }
 
@@ -252,9 +259,9 @@ main(int argc, char** argv)
 
       /* not really true given that cursor can be outside buffer */
       int cursor_position_in_buffer = row_index + (col - 1);
-      move_cursor(30, 1);
-      printf("cursor_position_in_buffer %d, and character: ", cursor_position_in_buffer);
-      character_printer(file_content[cursor_position_in_buffer]);
+      // move_cursor(30, 1);
+      // printf("cursor_position_in_buffer %d, and character: ", cursor_position_in_buffer);
+      // character_printer(file_content[cursor_position_in_buffer]);
 
       /* we also don't support <tabs> cuz it's PITA and they have variable length size for terminals */
       /* e.g. 8 character long tabs, we'd have to infer what's the next character after tab  */
@@ -266,7 +273,7 @@ main(int argc, char** argv)
       erase_screen();
       move_cursor(1, 1);
       printf("%s", file_content);
-      move_cursor(row, col);
+      move_cursor(row, col + 1);
       // move_cursor(1, 1);
       // move_cursor(1, 1);
       // fflush(stdout);
