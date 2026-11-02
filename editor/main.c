@@ -281,6 +281,24 @@ main(int argc, char** argv)
         fflush(stdout);
         continue;
       }
+
+      char newline = 10;
+
+      if(*current_character == newline)
+      {
+        memmove(file_content + cursor_position_in_buffer + 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
+        fflush(stdout);
+        file_content[cursor_position_in_buffer] = '\n';
+
+        erase_screen();
+        move_cursor(1, 1);
+        printf("%s", file_content);
+        move_cursor(row, col - 1);
+        fflush(stdout);
+        continue;
+      }
+
+      
       // 
       memmove(file_content + cursor_position_in_buffer + 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
 
