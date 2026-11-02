@@ -88,7 +88,8 @@ void get_cursor_position(int *col, int *row)
 
 enum Modes {
   Normal,
-  Edit
+  Edit,
+  Command
 };
 
 void character_printer(char character) {
@@ -228,11 +229,55 @@ main(int argc, char** argv)
         continue;
       }
 
+      if(*current_character == ':') {
+        edit_mode = Command;
+        strncpy(current_mode, "commandal", sizeof("commandal"));
+        continue;
+      }
+
+
       char esc = 27;
       if(*current_character == 27) {
         break;
       }
       
+    }
+
+    if(edit_mode == Command) {
+      char command_buffer[128];
+      command_buffer[0] = '\0';
+      get_cursor_position(&row, &col);
+      move_cursor(29, 1);
+
+      if(command_buffer[0] != '\0') {
+        printf(":%c", command_buffer[0]);
+        move_cursor(29, 1 + 2);
+      } else {
+        printf(":");
+        move_cursor(29, 1 + 1);
+      }
+      fflush(stdout);
+
+      char esc = 27;
+      if(esc == *current_character) {
+        move_cursor(row, col);
+        edit_mode = Normal;
+        strncpy(current_mode, "normal", sizeof("normal"));
+        continue;
+      }
+
+      if(*current_character != 10) {
+        command_buffer[0] = *current_character;
+      }
+
+      char newline = 10;
+      if("w" == command_buffer[0] && *current_character == 10) {
+        goto endlabel;        
+      }
+      
+      // if(current_character)
+      //
+      // 
     }
 
     if(edit_mode == Edit) {
@@ -322,7 +367,7 @@ main(int argc, char** argv)
     *current_character = '\0';
     fflush(stdout); 
   }
-
+endlabel:
   restore_default_termios_state();
   use_rmcup();
 
