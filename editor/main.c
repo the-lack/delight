@@ -91,6 +91,15 @@ enum Modes {
   Edit
 };
 
+void character_printer(char character) {
+    if(character == '\n') { printf("\\n"); return; }
+    if(character == ' ') { printf("<space>"); return; }
+    if(character == '\r') { printf("\\r"); return; }
+    if(character == 9) { printf("<tab>"); return; }
+    if(character == '\0') { printf("\\0"); return; }
+
+    printf("%c", character);
+}
 
 int
 main(int argc, char** argv)
@@ -158,17 +167,13 @@ main(int argc, char** argv)
 
   printf("\nfile content size: %d", sizeof(file_content));
 
-  for(int i = 0;; ++i) {
-    char character =  file_content[i];
-    if(character == '\n') { printf("\nchar \\n"); continue; }
-    if(character == ' ') { printf("\nchar <space>"); continue; }
-    if(character == '\r') { printf("\nchar \\r"); continue; }
-    if(character == 9) { printf("\nchar <tab>"); continue; }
-    printf("\nchar: %c", character);
-
-    if(file_content[i] == '\0') break;
-  }
-  return 0;
+  // printf("\n");
+  // for(int i = 0;; ++i) {
+  //   char character =  file_content[i];
+  //   character_printer(character);
+  //   if(file_content[i] == '\0') break;
+  // }
+  // return 0;
   
   printf("\n---- START\n");
   printf("%s", file_content);
@@ -215,6 +220,7 @@ main(int argc, char** argv)
       if(*current_character == 'i') {
         get_cursor_position(&row, &col);
         edit_mode = Edit;
+        continue;
       }
 
       char esc = 27;
@@ -228,6 +234,7 @@ main(int argc, char** argv)
       char esc = 27;
       if(*current_character == 27) {
         edit_mode = Normal;
+        continue;
       }
 
       get_cursor_position(&row, &col);
@@ -246,18 +253,24 @@ main(int argc, char** argv)
       /* not really true given that cursor can be outside buffer */
       int cursor_position_in_buffer = row_index + (col - 1);
       move_cursor(30, 1);
-      printf("cursor_position_in_buffer %d, and character %c", cursor_position_in_buffer, file_content[cursor_position_in_buffer]);
+      printf("cursor_position_in_buffer %d, and character: ", cursor_position_in_buffer);
+      character_printer(file_content[cursor_position_in_buffer]);
 
-      // memmove(file_content + cursor_position_in_buffer + 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
-      // file_content[cursor_position_in_buffer] = *current_character;
+      /* we also don't support <tabs> cuz it's PITA and they have variable length size for terminals */
+      /* e.g. 8 character long tabs, we'd have to infer what's the next character after tab  */
+      /* also no utf-8 for now :sadge:  */
 
-      move_cursor(1, 1);
+      memmove(file_content + cursor_position_in_buffer + 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
+      file_content[cursor_position_in_buffer] = *current_character;
+
       erase_screen();
       move_cursor(1, 1);
       printf("%s", file_content);
-      move_cursor(1, 1);
-      fflush(stdout);
       move_cursor(row, col);
+      // move_cursor(1, 1);
+      // move_cursor(1, 1);
+      // fflush(stdout);
+      // move_cursor(row, col);
 
 
       // int memmove
@@ -267,7 +280,6 @@ main(int argc, char** argv)
 
     *current_character = '\0';
     fflush(stdout); 
-    iterator++;
   }
 
   restore_default_termios_state();
