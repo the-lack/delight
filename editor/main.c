@@ -259,15 +259,31 @@ main(int argc, char** argv)
 
       /* not really true given that cursor can be outside buffer */
       int cursor_position_in_buffer = row_index + (col - 1);
-      // move_cursor(30, 1);
-      // printf("cursor_position_in_buffer %d, and character: ", cursor_position_in_buffer);
-      // character_printer(file_content[cursor_position_in_buffer]);
+      move_cursor(30, 1);
+      printf("cursor_position_in_buffer %d, and character: ", cursor_position_in_buffer);
+      character_printer(file_content[cursor_position_in_buffer]);
+      printf(" and current character: %d ", (int) *current_character);
 
       /* we also don't support <tabs> cuz it's PITA and they have variable length size for terminals */
       /* e.g. 8 character long tabs, we'd have to infer what's the next character after tab  */
       /* also no utf-8 for now :sadge:  */
 
+      char backspace_slash_DEL = 127;
+      if(*current_character == backspace_slash_DEL)
+      {
+        memmove(file_content + cursor_position_in_buffer - 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
+        fflush(stdout);
+
+        erase_screen();
+        move_cursor(1, 1);
+        printf("%s", file_content);
+        move_cursor(row, col - 1);
+        fflush(stdout);
+        continue;
+      }
+      // 
       memmove(file_content + cursor_position_in_buffer + 1, file_content + cursor_position_in_buffer, (1024 - cursor_position_in_buffer - 1));
+
       file_content[cursor_position_in_buffer] = *current_character;
 
       erase_screen();
@@ -276,7 +292,7 @@ main(int argc, char** argv)
       move_cursor(row, col + 1);
       // move_cursor(1, 1);
       // move_cursor(1, 1);
-      // fflush(stdout);
+      fflush(stdout);
       // move_cursor(row, col);
 
 
