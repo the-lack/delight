@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <string.h>
+#include <sys/mman.h>
 
 void use_smcup() {
   write(STDOUT_FILENO, "\E[?1049h", 8);  
@@ -163,6 +164,10 @@ main(int argc, char** argv)
     return 0;
   }
 
+  // void abc[1024];
+
+  // mmap(file_content, 1024, prot, flags, file_handle, offset)
+
   fread(file_content, 1, sizeof(file_content) - 1, file_handle);
   file_content[4096 - 1] = '\0';
 
@@ -263,15 +268,17 @@ main(int argc, char** argv)
         move_cursor(row, col);
         edit_mode = Normal;
         strncpy(current_mode, "normal", sizeof("normal"));
+        fflush(stdout);
         continue;
       }
 
-      if(*current_character != 10) {
+      char newline = 10;
+      if(*current_character != newline) {
         command_buffer[0] = *current_character;
       }
 
-      char newline = 10;
       if("w" == command_buffer[0] && *current_character == 10) {
+        fwrite(file_content, sizeof(file_content), sizeof(char), file_handle);
         goto endlabel;        
       }
       
