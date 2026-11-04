@@ -196,7 +196,10 @@ main(int argc, char** argv)
 
   char current_mode[128] = "normal";
 
-  iterator = 0; 
+  iterator = 0;
+
+  char command_buffer[128];
+  command_buffer[0] = '\0';  
   while (1)
   {
     int row;
@@ -237,7 +240,6 @@ main(int argc, char** argv)
       if(*current_character == ':') {
         edit_mode = Command;
         strncpy(current_mode, "commandal", sizeof("commandal"));
-        continue;
       }
 
 
@@ -249,8 +251,7 @@ main(int argc, char** argv)
     }
 
     if(edit_mode == Command) {
-      char command_buffer[128];
-      command_buffer[0] = '\0';
+
       get_cursor_position(&row, &col);
       move_cursor(29, 1);
 
@@ -269,6 +270,7 @@ main(int argc, char** argv)
         edit_mode = Normal;
         strncpy(current_mode, "normal", sizeof("normal"));
         fflush(stdout);
+        command_buffer[0] = '\0';
         continue;
       }
 
@@ -276,15 +278,18 @@ main(int argc, char** argv)
       if(*current_character != newline) {
         command_buffer[0] = *current_character;
       }
+      if('w' == command_buffer[0] && *current_character == newline) {
+        printf("we entered the thing");
+        // we set somewhere up there magical \0 shady af af af but works
 
-      if("w" == command_buffer[0] && *current_character == 10) {
-        fwrite(file_content, sizeof(file_content), sizeof(char), file_handle);
-        goto endlabel;        
+        size_t file_content_length = strlen(file_content);
+
+        int file_fd = fileno(file_handle);         
+        // move cursor to file start
+        lseek(file_fd, 0, SEEK_SET);
+        fwrite(file_content, file_content_length, sizeof(char), file_handle);
+        break;
       }
-      
-      // if(current_character)
-      //
-      // 
     }
 
     if(edit_mode == Edit) {
