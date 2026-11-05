@@ -1,5 +1,11 @@
 abcdef = 123 + 456
 
+&&&&&&&& magic compilator blocker &&&&&&&&
+
+abcdef_str = /my integer = ?abcdef
+
+print(abcdef_str)
+
 my_string_stuff = /my thingies
 
 print my_string_stuff
