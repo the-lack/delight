@@ -709,8 +709,12 @@ int main() {
   std::vector<TokenKind> tokens_that_want_expanding = {};
   std::vector<TokenKind> tokens_that_want_flushing = {};
 
+  char magic_halt_character = '&';
+
   for (size_t index = 0; index < file_vector.size(); ++index) {
     char current_character = file_vector[index];
+    if(current_character == magic_halt_character) break;
+    
     current_classification_candidate.push_back(current_character);
 
     size_t token_start_index =
