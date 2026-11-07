@@ -5,45 +5,9 @@
 #include <cstdio>
 #include <fstream>
 #include <ios>
-// #include <llvm/IR/Function.h>
-// #include <llvm/Support/raw_ostream.h>
-#include <llvm/ADT/ArrayRef.h>
-#include <llvm/IR/Metadata.h>
-#include <llvm/Support/Format.h>
-#include <llvm/TargetParser/Triple.h>
 #include <map>
 #include <string>
 #include <vector>
-
-// llvm stuff
-// #include "llvm/IR/IRBuilder.h"
-// #include "llvm/IR/LLVMContext.h"
-// #include "llvm/IR/Module.h"
-// #include "llvm/IR/Verifier.h"
-
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
-#include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Target/TargetMachine.h"
-#include "llvm/Target/TargetOptions.h"
-#include "llvm/TargetParser/Host.h"
-
-// using namespace llvm;
-// using namespace llvm::sys;
 
 using std::string;
 
@@ -618,61 +582,8 @@ void classify_token(string current_character_cluster, char new_character) {
 
 int main() {
 
-  auto llvm_context = std::make_unique<llvm::LLVMContext>();
-  auto llvm_module =
-      std::make_unique<llvm::Module>("main_module", *llvm_context);
-  llvm::IRBuilder<> llvm_builder(*llvm_context);
-
-  llvm::InitializeAllTargetInfos();
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmParsers();
-  llvm::InitializeAllAsmPrinters();
-
-  auto TargetTriple = llvm::sys::getDefaultTargetTriple();
-  llvm::Triple name(TargetTriple);
-  llvm_module->setTargetTriple(name);
 
   std::string Error;
-  const llvm::Target *Target = llvm::TargetRegistry::lookupTarget(name, Error);
-
-  if (!Target) {
-    llvm::errs() << "Error finding target: " << Error << "\n";
-    return 1;
-  }
-
-  std::string llvm_cpu = "generic";
-  std::string llvm_features = "";
-  llvm::TargetOptions llvm_target_options;
-  auto llvm_reloc_model = std::optional<llvm::Reloc::Model>();
-
-  llvm::TargetMachine *TargetMachine = Target->createTargetMachine(
-      name, llvm_cpu, llvm_features, llvm_target_options, llvm_reloc_model);
-  llvm_module->setDataLayout(TargetMachine->createDataLayout());
-
-  llvm::FunctionType *FuncType =
-      llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context), {}, false);
-  llvm::Function *MainFunc = llvm::Function::Create(
-      FuncType, llvm::Function::ExternalLinkage, "main", llvm_module.get());
-
-  llvm::BasicBlock *BB =
-      llvm::BasicBlock::Create(*llvm_context, "entry", MainFunc);
-
-  MainFunc->setDSOLocal(true);
-
-  llvm_builder.SetInsertPoint(BB);
-
-  /* define printf for later linkage on top of llvm IR */
-  auto llvm_pointer = llvm::PointerType::get(*llvm_context, /*AddressSpace=*/0);
-  auto llvm_int64 = llvm::Type::getInt64Ty(*llvm_context);
-
-  llvm::FunctionType *printf_type =
-      llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm_context),
-                              {llvm_pointer, llvm_int64}, /*isVarArg=*/true);
-  llvm::Function *printf_func =
-      llvm::Function::Create(printf_type, llvm::Function::ExternalLinkage,
-                             "delight_print", llvm_module.get());
-  /* end define printf for later linkage on top of llvm IR */
 
   printf("start");
   std::fstream entrypoint_file_stream;
@@ -824,59 +735,14 @@ int main() {
   printf("left: %lu", left_int);
   printf("right: %lu", right_int);
 
-  llvm::Value *llvm_left =
-      llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), left_int);
-  llvm::Value *llvm_right =
-      llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), right_int);
-
-  auto abc = llvm_builder.CreateAdd(llvm_left, llvm_right);
-  llvm::AllocaInst *llvm_alloca_inst =
-      llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
-
-  llvm_builder.CreateStore(abc, llvm_alloca_inst);
-
-  char mystr[8] = {'m', 'e', 't', 'h', 'i', 'n', 'k', 's'};
-
-  llvm::Value *myStrPtr = llvm_builder.CreateGlobalString(mystr);
-
-  llvm::Value *mystr_length =
-      llvm::ConstantInt::get(llvm::Type::getInt64Ty(*llvm_context), 8);
-
-  llvm_builder.CreateCall(printf_func, {myStrPtr, mystr_length});
-
-  // llvm::call
-
-  // llvm_builder.CreateStore(Value *Val, Value *Ptr, const
-  // LoadStoreInstProperties &Props)
-
-  // llvm::AllocaInst *llvm_alloca_inst =
-  // llvm_builder.CreateAlloca(llvm_builder.getInt32Ty(), nullptr, "myVar");
-
-  // break;
-  // }
-  // };
-
   printf("dupa3");
 
   // MainFunc->setReturnDoesNotAlias()
   //
   // auto return_value = llvm::Type::getInt32Ty()
   // builder.ge
-  auto return_value = llvm_builder.getInt32(0);
-  llvm_builder.CreateRet(return_value);
 
   // llvm_builder.return
-
-  std::error_code EC;
-  llvm::raw_fd_ostream dest("output.ll", EC);
-
-  if (EC) {
-    llvm::errs() << "Could not open file: " << EC.message() << "\n";
-    return 1;
-  }
-
-  llvm_module->print(dest, nullptr);
-  dest.flush();
 
   return 0;
 };
