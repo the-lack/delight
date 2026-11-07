@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h> 
 
 #define ASSERT(condition)                \
 do {                                     \
@@ -21,6 +22,18 @@ do {                                     \
    }                                     \
 } while(0)                               \
 
+
+#define TOKENS \
+   X(NoneYet)          \
+   X(TypeDeclaration)  \
+   X(Identifier)       \
+   X(Assignment)       \
+   X(IntegerLiteral)   \
+   X(FloatLiteral)     \
+   X(StringLiteral)    \
+   X(BooleanLiteral)   
+
+/* part vector */
 struct vector
 {
   size_t element_count;
@@ -84,6 +97,39 @@ vector_free(struct vector* self)
    free(self);
 }
 
+/* part main */
+enum TokenKind
+{
+   #define X(name) name,
+   TOKENS
+   #undef X
+};
+
+char* token_kind_to_char(enum TokenKind kind) {
+   #define X(name) if(kind == name) { static char* variable = #name; return variable; }
+   TOKENS
+   #undef X
+
+   ASSERT("no execution path leads here" && 0);
+}
+
+struct Token
+{
+   struct vector* value;
+   enum TokenKind kind;
+};
+
+bool is_alpha(char character) {
+   bool is_uppercase_ascii = character >= 65 && character <= 90;
+   bool is_lowercase_ascii = character >= 97 && character <= 122;
+
+   if(is_uppercase_ascii || is_lowercase_ascii) {
+      return true;
+   }
+
+   return false;
+}
+
 int
 main(void)
 {
@@ -105,23 +151,62 @@ main(void)
       return -1;
    }
 
-   fwrite(file_content_buffer, sizeof(char), fread_file_byte_count, stdout);
-
    // (f)lex
    struct vector* current_lexeme = vector_create(sizeof(char));
+   struct vector* tokens = vector_create(sizeof(struct Token));
+   
+   enum TokenKind assumed_token_kind = NoneYet;
 
-   for(size_t i = 0; i < fread_file_byte_count; i++) {
+   char magic_compiler_blocker = '&';
+
+   for(size_t i = 0; i < fread_file_byte_count; i++)
+   {
       char character = file_content_buffer[i];
 
-      vector_append(current_lexeme, &character);      
-   }   
+      if(character == magic_compiler_blocker) { break; }
+      
 
-   for(size_t i = 0; i < current_lexeme->element_count; i++){
-      printf("%c", *((char*)vector_get(current_lexeme, i)));
+      if(is_alpha(character))
+      {
+         assumed_token_kind = Identifier;
+         vector_append(current_lexeme, &character);
+         continue;
+      }
+
+      if(' ' == character || '\n' == character)
+      {
+         struct Token established_token =
+         {
+            .kind  = assumed_token_kind,
+            .value = current_lexeme
+         };
+
+         vector_append(tokens, &established_token);
+         current_lexeme = vector_create(sizeof(char));
+
+         continue;
+      }
+
+      printf("file contains invalid characters: %c", character);
+      return -1;
    }
 
-   vector_free(current_lexeme);
-
+   printf("tokens found: \n-----\n");
+   for(size_t i = 0; i < tokens->element_count; i++)
+   {
+      struct Token *token = vector_get(tokens, i);
+      
+      printf
+      (
+       "kind %s | value: %.*s",
+       token_kind_to_char(token->kind),
+       (int)token->value->element_count, (char*)token->value->data_ptr
+      );
+   }
    
+
+   vector_free(current_lexeme);
+   vector_free(tokens);
+
    return 0;
 }
