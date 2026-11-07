@@ -173,21 +173,25 @@ main(void)
          continue;
       }
 
-      if(' ' == character || '\n' == character)
-      {
-         struct Token established_token =
-         {
-            .kind  = assumed_token_kind,
-            .value = current_lexeme
-         };
 
-         vector_append(tokens, &established_token);
-         current_lexeme = vector_create(sizeof(char));
+      if((' ' == character || '\n' == character))
+      {
+         if(current_lexeme->element_count > 0)
+         {
+            struct Token established_token =
+            {
+               .kind  = assumed_token_kind,
+               .value = current_lexeme
+            };
+
+            vector_append(tokens, &established_token);
+            current_lexeme = vector_create(sizeof(char));           
+         }
 
          continue;
       }
 
-      printf("file contains invalid characters: %c", character);
+      printf("file contains invalid characters: '%c'", character);
       return -1;
    }
 
@@ -198,7 +202,7 @@ main(void)
       
       printf
       (
-       "kind %s | value: %.*s",
+       "kind '%s' | value: '%.*s'\n",
        token_kind_to_char(token->kind),
        (int)token->value->element_count, (char*)token->value->data_ptr
       );
