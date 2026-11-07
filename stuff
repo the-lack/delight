@@ -1,0 +1,7 @@
+
+characters [...]
+current_index = 0
+current_character = characters[current_index]
+
+parse_stuff():
+	
