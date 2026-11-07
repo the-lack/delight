@@ -232,20 +232,19 @@ lexer_number(struct Lexer* self)
 {
    char*  start_ptr            = self->characters + self->current_index;
    size_t lexeme_length        = 1; // single char initially
-   char*  next_peeked_char_ptr = lexer_peek(self);
 
-   while(next_peeked_char_ptr != NULL && is_numeric(*next_peeked_char_ptr))
+   lexer_advance(self);
+   while(!self->end_of_characters && is_numeric(self->current_character))
    {
       ++lexeme_length; 
       lexer_advance(self);
-      next_peeked_char_ptr = lexer_peek(self);
    }
 
    struct Token identifier_token =
    {
      .value_ptr = start_ptr,
      .len       = lexeme_length,
-     .kind      = Identifier
+     .kind      = IntegerLiteral
    };
 
    vector_append(self->tokens, &identifier_token);
@@ -263,18 +262,38 @@ lexer_lex(struct Lexer* self)
          break;
       }
 
+      if(self->current_character == ' ' || self->current_character == '\n')
+      {
+         lexer_advance(self);
+         continue;
+      }
+
       if(is_alpha(self->current_character))
       {
          lexer_identifier(self);
          continue;
       }
 
-      // if(is_numeric(self->current_character))
-      // {
-      //    lexer_number(self);
-      //    continue;
-      // }
-      
+      if(self->current_character == '=')
+      {
+         struct Token identifier_token =
+         {
+           .value_ptr = self->characters + self->current_index,
+           .len       = 1,
+           .kind      = Assignment
+         };
+         vector_append(self->tokens, &identifier_token);
+         lexer_advance(self);
+         continue;
+      }
+
+      if(is_numeric(self->current_character))
+      {
+         lexer_number(self);
+         continue;
+      }
+
+      // nothing matched up
       break;
    }
 }
