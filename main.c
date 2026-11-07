@@ -118,8 +118,9 @@ token_kind_to_char(enum TokenKind kind)
 
 struct Token
 {
-   struct vector* value;
    enum TokenKind kind;
+   char* value_ptr;
+   size_t len;
 };
 
 bool
@@ -135,12 +136,19 @@ is_alpha(char character)
    return false;
 }
 
+bool
+is_numeric(char character)
+{
+   return character >= 48 && character <= 57;
+}
+
 struct Lexer
 {
    size_t current_index;
    char current_character;
    char* characters;
    size_t character_count;
+   bool end_of_characters;
    struct vector* tokens;
 };
 
@@ -151,21 +159,126 @@ lexer_create(char* characters, size_t character_count)
    struct vector* tokens_vector = vector_create(sizeof(struct Token));
    ASSERT(lexer != NULL );
 
-   lexer->current_index   = 0;
-   lexer->characters      = characters;
-   lexer->tokens          = tokens_vector;
-   lexer->character_count = character_count;
+   lexer->characters        = characters;
+   lexer->tokens            = tokens_vector;
+   lexer->character_count   = character_count;
+   lexer->end_of_characters = false;
+
+   lexer->current_index     = 0;
+   lexer->current_character = lexer->characters[0];
 
    return lexer;
+}
+
+/* does not deallocate data under received pointer to characters */
+void
+lexer_free(struct Lexer* self)
+{
+   free(self->tokens);
+   free(self);
 }
 
 void
 lexer_advance(struct Lexer* self)
 {
-   ASSERT(self->current_index < self->character_count);
-   self->current_index++;
-   self->current_character = self->characters[self->current_index];
+   if(self->current_index + 1 < self->character_count)
+   {
+      self->current_index++;
+      self->current_character = self->characters[self->current_index];
+      return;
+   };
+
+   self->end_of_characters = true;
+   return;
+
 }
+
+char*
+lexer_peek(struct Lexer* self)
+{
+   if(self->current_index + 1 < self->character_count)
+   {
+      return &self->characters[self->current_index + 1];
+   }
+
+   return NULL;
+}
+
+void
+lexer_identifier(struct Lexer* self)
+{
+   char*  start_ptr            = self->characters + self->current_index;
+   size_t lexeme_length        = 1; // single char initially
+   lexer_advance(self);
+
+   while(!self->end_of_characters && is_alpha(self->current_character))
+   {
+      ++lexeme_length; 
+      lexer_advance(self);
+   }
+
+   struct Token identifier_token =
+   {
+     .value_ptr = start_ptr,
+     .len       = lexeme_length,
+     .kind      = Identifier
+   };
+
+   vector_append(self->tokens, &identifier_token);
+}
+
+void
+lexer_number(struct Lexer* self)
+{
+   char*  start_ptr            = self->characters + self->current_index;
+   size_t lexeme_length        = 1; // single char initially
+   char*  next_peeked_char_ptr = lexer_peek(self);
+
+   while(next_peeked_char_ptr != NULL && is_numeric(*next_peeked_char_ptr))
+   {
+      ++lexeme_length; 
+      lexer_advance(self);
+      next_peeked_char_ptr = lexer_peek(self);
+   }
+
+   struct Token identifier_token =
+   {
+     .value_ptr = start_ptr,
+     .len       = lexeme_length,
+     .kind      = Identifier
+   };
+
+   vector_append(self->tokens, &identifier_token);
+}
+
+void
+lexer_lex(struct Lexer* self)
+{
+   char magic_compiler_blocker = '&';
+
+   while(!(self->end_of_characters))
+   {
+      if(self->current_character == magic_compiler_blocker)
+      {
+         break;
+      }
+
+      if(is_alpha(self->current_character))
+      {
+         lexer_identifier(self);
+         continue;
+      }
+
+      // if(is_numeric(self->current_character))
+      // {
+      //    lexer_number(self);
+      //    continue;
+      // }
+      
+      break;
+   }
+}
+
 
 /* part main */
 int
@@ -190,25 +303,22 @@ main(void)
    }
 
    // (f)lex
-   struct vector* current_lexeme = vector_create(sizeof(char));
-   struct vector* tokens = vector_create(sizeof(struct Token));
+   struct Lexer* lexer = lexer_create(file_content_buffer, fread_file_byte_count);
+   lexer_lex(lexer);
 
-   printf("tokens found: \n-----\n");
-   for(size_t i = 0; i < tokens->element_count; i++)
+   for(size_t i = 0; i < lexer->tokens->element_count; i++)
    {
-      struct Token *token = vector_get(tokens, i);
+      struct Token *token = vector_get(lexer->tokens, i);
       
       printf
       (
        "kind '%s' | value: '%.*s'\n",
        token_kind_to_char(token->kind),
-       (int)token->value->element_count, (char*)token->value->data_ptr
+       (int)token->len, (char*)token->value_ptr
       );
    }
-   
 
-   vector_free(current_lexeme);
-   vector_free(tokens);
+   lexer_free(lexer);
 
    return 0;
 }
