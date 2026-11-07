@@ -708,49 +708,8 @@ int main() {
            token.value.c_str());
   }
 
-  std::vector<std::vector<TokenKind>> grammar_rules = {
-      {TokenKind::Identifier, TokenKind::Assignment, TokenKind::IntegerLiteral,
-       TokenKind::Addition, TokenKind::Addition, TokenKind::Delimiter},
-  };
-
-  std::vector<Token> current_grammar_thing = {};
-  std::vector<TokenKind> current_grammar_thing_kind = {};
-
-  bool shall_we_flush = false;
-
-  // for (auto token : tokens_found) {
-  // current_grammar_thing.push_back(token);
-  // current_grammar_thing_kind.push_back(token.kind);
-
-  // printf("dupa");
-  // if (tokens_found == grammar_rules[0]) {
-  printf("dupa2");
-
-  uint64_t left_int;
-  uint64_t right_int;
-  bool parsed_left = try_parse_uint_64(tokens_found[2].value, left_int);
-  bool parsed_right = try_parse_uint_64(tokens_found[4].value, right_int);
-
-  ASSERT_THAT("parsed", parsed_left && parsed_right);
-  printf("left: %lu", left_int);
-  printf("right: %lu", right_int);
-
-  printf("dupa3");
-
-  // MainFunc->setReturnDoesNotAlias()
-  //
-  // auto return_value = llvm::Type::getInt32Ty()
-  // builder.ge
-
-  // llvm_builder.return
-
   return 0;
 };
-
-
-// My parser stuff
-//
-
 
 static int token_index = 0;
 
