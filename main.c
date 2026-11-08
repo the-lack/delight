@@ -32,7 +32,8 @@ do {                                     \
    X(IntegerLiteral)   \
    X(FloatLiteral)     \
    X(StringLiteral)    \
-   X(BooleanLiteral)   
+   X(BooleanLiteral)   \
+   X(StatementEnd)    
 
 /* part vector */
 struct vector
@@ -107,7 +108,7 @@ enum TokenKind
 };
 
 char*
-token_kind_to_char(enum TokenKind kind)
+token_kind_to_str(enum TokenKind kind)
 {
    #define X(name) if(kind == name) { static char* variable = #name; return variable; }
    TOKENS
@@ -250,7 +251,28 @@ lexer_number(struct Lexer* self)
    vector_append(self->tokens, &identifier_token);
 }
 
-void
+#define LEX_RESULT       \
+   X(AllGood)            \
+   X(InvalidCharacter)
+
+enum LexResult
+{
+   #define X(name) name,
+   LEX_RESULT
+   #undef X
+};
+
+char*
+lex_result_to_str(enum LexResult result)
+{
+   #define X(name) if(result == name) { static char* variable = #name; return variable; }
+   LEX_RESULT
+   #undef X
+
+   ASSERT("no execution path leads here" && false);
+}
+   
+enum LexResult
 lexer_lex(struct Lexer* self)
 {
    char magic_compiler_blocker = '&';
@@ -287,15 +309,29 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
+      if(self->current_character == ';')
+      {
+         struct Token identifier_token =
+         {
+           .value_ptr = self->characters + self->current_index,
+           .len       = 1,
+           .kind      = StatementEnd
+         };
+         vector_append(self->tokens, &identifier_token);
+         lexer_advance(self);
+         continue;
+      }      
+
       if(is_numeric(self->current_character))
       {
          lexer_number(self);
          continue;
       }
 
-      // nothing matched up
-      break;
+      return InvalidCharacter;
    }
+   
+   return AllGood;
 }
 
 
@@ -323,7 +359,13 @@ main(void)
 
    // (f)lex
    struct Lexer* lexer = lexer_create(file_content_buffer, fread_file_byte_count);
-   lexer_lex(lexer);
+   enum LexResult result = lexer_lex(lexer);
+
+   if(result != AllGood)
+   {
+      printf("lexer encountered an error: %s\n", lex_result_to_str(result));
+      return -1;
+   }
 
    for(size_t i = 0; i < lexer->tokens->element_count; i++)
    {
@@ -332,7 +374,7 @@ main(void)
       printf
       (
        "kind '%s' | value: '%.*s'\n",
-       token_kind_to_char(token->kind),
+       token_kind_to_str(token->kind),
        (int)token->len, (char*)token->value_ptr
       );
    }
