@@ -37,17 +37,16 @@ int addition = 3 + 1;
 
 int subtraction = 3 - 1;
 
-&&&&&&&& magic compilator blocker &&&&&&&&
-
-float final_score = (float)score + bonus - 5.0;
 
 // 3. Conditional execution (if-else) with relational and logical operators
-if (final_score > threshold && is_active) {
+if (finalScore > threshold && isActive) {
     print("Status: PASSED\n");
-    print(user_name);
+    print(username);
 } else {
     print("Status: FAILED\n");
 }
+
+\\\\ magic compilator blocker \\\
 
 // 4. Iteration (while loop) with arithmetic, assignment, and modulo operators
 int counter = 0;
@@ -128,6 +127,7 @@ int factorial(int n) {
 
 int fact_val = factorial(4); // Should compute 24
 
+float final_score = (float)score + bonus - 5.0;
 
 &&&&&&&& magic compilator blocker &&&&&&&&
 

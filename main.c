@@ -42,6 +42,13 @@ do {                                     \
    X(Equal)            \
    X(PlusOperator)     \
    X(MinusOperator)    \
+   X(If)               \
+   X(Else)             \
+   X(ParenOpen)        \
+   X(ParenClose)       \
+   X(BracketOpen)      \
+   X(BracketClose)     \
+   X(AndOperator)      \
    X(StatementEnd)    
 
 /* part vector */
@@ -265,7 +272,10 @@ const char *const keywords[] =
    "int",
    "float",
    "string",
-   "bool"
+   "bool",
+   "if",
+   "else",
+   "print"
 };
 
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
@@ -528,7 +538,7 @@ lex_result_to_str(enum LexResultCode code)
 struct LexResult
 lexer_lex(struct Lexer* self)
 {
-   char magic_compiler_blocker = '&';
+   char magic_compiler_blocker = '\\';
    
    while(!(self->end_of_characters))
    {
@@ -673,8 +683,102 @@ lexer_lex(struct Lexer* self)
          lexer_advance(self); // prepare next
          continue;
       }
-      
 
+      if(self->current_character == '(')
+      {
+         struct Token established_token =
+         {
+            .kind      = ParenOpen,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+
+      if(self->current_character == ')')
+      {
+         struct Token established_token =
+         {
+            .kind      = ParenClose,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }      
+
+      if(self->current_character == '{')
+      {
+         struct Token established_token =
+         {
+            .kind      = BracketOpen,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+
+      if(self->current_character == '}')
+      {
+         struct Token established_token =
+         {
+            .kind      = BracketClose,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+
+      if('&' == self->current_character)
+      {
+         char* value_ptr = (char*)self->characters + self->current_index;
+         lexer_advance(self);
+
+         if('&' == self->current_character)
+         {
+            struct Token established_token =
+            {
+               .kind      = AndOperator,
+               .len       = 2,
+               .value_ptr = value_ptr
+            };            
+            vector_append(self->tokens, &established_token);
+            lexer_advance(self); // prepare next
+            continue;
+         }
+
+         size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
+         // make both 1-indexed
+         size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
+         size_t line   = self->encountered_newlines + 1;
+
+         static char error_message[256];
+         snprintf
+         (
+            error_message, sizeof(error_message),
+            "unexpected character '%c' encountered on line %zu, column %zu. '&' should be followed by another '&' to create an AND statement",
+            self->current_character, line, column
+         );
+
+         return
+         (struct LexResult)
+         {
+         .code          = DifferentExpected,
+         .error_message = error_message
+         };
+      }      
+      
       size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
       // make both 1-indexed
       size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
