@@ -17,9 +17,10 @@ something123
 float threshold = 85.5;
 float threshold2 = 853819.518;
 
+string username = "CompilerTester";
+
 &&&&&&&& magic compilator blocker &&&&&&&&
 
-char* user_name = "CompilerTester";
 bool is_active = true;
 
 &&&&&&&& magic compilator blocker &&&&&&&&

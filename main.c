@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h> 
 #include <threads.h>
+#include <unistd.h>
 
 #define ASSERT(condition)                \
 do {                                     \
@@ -111,6 +112,7 @@ enum TokenKind
 #define LEX_RESULT_CODE  \
    X(AllGood)            \
    X(DifferentExpected)  \
+   X(Missing)            \
    X(InvalidCharacter)
 
 enum LexResultCode
@@ -226,7 +228,6 @@ lexer_advance(struct Lexer* self)
 
    self->end_of_characters = true;
    return;
-
 }
 
 char*
@@ -255,7 +256,8 @@ lexer_lookahead(struct Lexer* self, size_t by)
 const char *const keywords[] =
 {
    "int",
-   "float"
+   "float",
+   "string"
 };
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
 
@@ -369,6 +371,7 @@ lexer_number(struct Lexer* self)
       .error_message = NULL
    };
 }
+
 struct LexResult
 lexer_comment(struct Lexer* self)
 {
@@ -420,6 +423,64 @@ lexer_comment(struct Lexer* self)
       .error_message = NULL,
    };
 }
+
+struct LexResult
+lexer_string(struct Lexer* self)
+{
+   char* start_ptr = self->characters + self->current_index;
+   size_t lexeme_length = 1; // single char initially
+   struct Token established_token;
+
+   lexer_advance(self);
+
+   while(!self->end_of_characters && self->current_character != '"')
+   {
+      printf("character: '%c' [ASCII: %d]\n", self->current_character, (int)self->current_character);      
+      ++lexeme_length;
+      lexer_advance(self);
+   }
+
+   if(self->current_character != '"')
+   {
+      static char error_message[256];
+
+      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
+      // make both 1-indexed
+      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
+      size_t line   = self->encountered_newlines + 1;      
+      
+      snprintf
+      (
+         error_message, sizeof(error_message),
+         "missing string ending for string starting at line %zu, column %zu",
+         line, column
+      );
+      return
+      (struct LexResult)
+      {
+         .code          = Missing,
+         .error_message = error_message,
+      };
+      
+   }
+   // NOTE: include enclosing quote into lexeme, kinda messy control flow but to be refactored later
+   lexer_advance(self); 
+   ++lexeme_length; 
+
+   established_token.value_ptr = start_ptr;
+   established_token.len       = lexeme_length;
+   established_token.kind      = StringLiteral;
+
+   vector_append(self->tokens, &established_token);
+
+   return
+   (struct LexResult)
+   {
+      .code          = AllGood,
+      .error_message = NULL,
+   };
+}
+
 
 char*
 lex_result_to_str(enum LexResultCode code)
@@ -478,6 +539,13 @@ lexer_lex(struct Lexer* self)
       if(self->current_character == '/')
       {
          struct LexResult result = lexer_comment(self);
+         if(result.code != AllGood) { return result; }
+         continue;
+      }
+
+      if(self->current_character == '"')
+      {
+         struct LexResult result = lexer_string(self);
          if(result.code != AllGood) { return result; }
          continue;
       }      
