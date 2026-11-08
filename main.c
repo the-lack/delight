@@ -260,18 +260,6 @@ lexer_peek(struct Lexer* self)
    return NULL;
 }
 
-char*
-lexer_lookahead(struct Lexer* self, size_t by)
-{
-   if(self->current_index + by < self->character_count)
-   {
-      return &self->characters[self->current_index + 1];
-   }
-
-   return NULL;
-}
-
-
 const char *const keywords[] =
 {
    "int",
