@@ -257,9 +257,18 @@ const char *const keywords[] =
 {
    "int",
    "float",
-   "string"
+   "string",
+   "bool"
 };
+
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
+
+const char *const bools[] =
+{
+   "true",
+   "false",
+};
+size_t bools_length= sizeof(bools) / sizeof(bools[0]);
 
 void
 lexer_identifier_or_keyword(struct Lexer* self)
@@ -287,6 +296,24 @@ lexer_identifier_or_keyword(struct Lexer* self)
          established_token.value_ptr = start_ptr;
          established_token.len       = lexeme_length;
          established_token.kind      = KeywordType;
+
+         vector_append(self->tokens, &established_token);
+         return;
+      }
+   }
+
+   for(size_t i = 0; i<bools_length; i++)
+   {
+      const char* current_bool_keyword = bools[i];
+      size_t bool_length       = strlen(current_bool_keyword);
+
+      if(bool_length != lexeme_length) { continue; }
+
+      if(0 == strncmp(current_bool_keyword, start_ptr, lexeme_length))
+      {
+         established_token.value_ptr = start_ptr;
+         established_token.len       = lexeme_length;
+         established_token.kind      = BooleanLiteral;
 
          vector_append(self->tokens, &established_token);
          return;

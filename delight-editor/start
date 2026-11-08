@@ -19,14 +19,15 @@ float threshold2 = 853819.518;
 
 string username = "CompilerTester";
 
-&&&&&&&& magic compilator blocker &&&&&&&&
 
-bool is_active = true;
+bool isActive = true;
 
-&&&&&&&& magic compilator blocker &&&&&&&&
 
 // 2. Arithmetic, type casting, and float/int mixing
 float bonus = 15.25;
+
+&&&&&&&& magic compilator blocker &&&&&&&&
+
 float final_score = (float)score + bonus - 5.0;
 
 // 3. Conditional execution (if-else) with relational and logical operators
