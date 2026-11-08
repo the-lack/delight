@@ -24,9 +24,9 @@ do {                                     \
 } while(0)                               \
 
 
-#define TOKENS \
+#define TOKENS         \
    X(NoneYet)          \
-   X(TypeDeclaration)  \
+   X(KeywordType)      \
    X(Identifier)       \
    X(Assignment)       \
    X(IntegerLiteral)   \
@@ -219,11 +219,17 @@ lexer_peek(struct Lexer* self)
    return NULL;
 }
 
-void
-lexer_identifier(struct Lexer* self)
+const char *const keywords[] =
 {
-   char*  start_ptr            = self->characters + self->current_index;
-   size_t lexeme_length        = 1; // single char initially
+   "int"
+};
+
+void
+lexer_identifier_or_keyword(struct Lexer* self)
+{
+   char*  start_ptr               = self->characters + self->current_index;
+   size_t lexeme_length           = 1; // single char initially
+   struct Token established_token;
    lexer_advance(self);
 
    while(!self->end_of_characters && is_alpha(self->current_character))
@@ -232,14 +238,33 @@ lexer_identifier(struct Lexer* self)
       lexer_advance(self);
    }
 
-   struct Token identifier_token =
-   {
-     .value_ptr = start_ptr,
-     .len       = lexeme_length,
-     .kind      = Identifier
-   };
+   size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
 
-   vector_append(self->tokens, &identifier_token);
+
+   for(size_t i = 0; i<keywords_length; i++)
+   {
+      const char* current_keyword = keywords[i];
+      size_t keyword_length       = strlen(current_keyword);
+
+      if(keyword_length != lexeme_length) { continue; }
+
+      if(0 == strncmp(current_keyword, start_ptr, lexeme_length))
+      {
+         printf("keywordzik");
+         established_token.value_ptr = start_ptr;
+         established_token.len       = lexeme_length;
+         established_token.kind      = KeywordType;
+
+         vector_append(self->tokens, &established_token);
+         return;
+      }
+   }
+
+   established_token.value_ptr = start_ptr;
+   established_token.len       = lexeme_length;
+   established_token.kind      = Identifier;
+
+   vector_append(self->tokens, &established_token);
 }
 
 void
@@ -314,7 +339,7 @@ lexer_lex(struct Lexer* self)
 
       if(is_alpha(self->current_character))
       {
-         lexer_identifier(self);
+         lexer_identifier_or_keyword(self);
          continue;
       }
 

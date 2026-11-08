@@ -1,7 +1,9 @@
 score = 123;
 scoreTwo = score;
-scoreTh*ree = score;
 scoreThree = score;
+scoreThree = score;
+
+int anotherscore = 2;
 
 &&&&&&&& magic compilator blocker &&&&&&&&
 
