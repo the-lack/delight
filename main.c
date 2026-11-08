@@ -235,7 +235,7 @@ lexer_identifier_or_keyword(struct Lexer* self)
    struct Token established_token;
    lexer_advance(self);
 
-   while(!self->end_of_characters && is_alpha(self->current_character))
+   while(!self->end_of_characters && (is_alpha(self->current_character) || is_numeric(self->current_character)))
    {
       ++lexeme_length; 
       lexer_advance(self);
