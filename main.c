@@ -145,12 +145,17 @@ is_numeric(char character)
 
 struct Lexer
 {
+   struct vector* tokens;
+
    size_t current_index;
    char current_character;
    char* characters;
    size_t character_count;
    bool end_of_characters;
-   struct vector* tokens;
+
+   // NOTE: for error location: line X, column Y
+   size_t encountered_newlines;
+   size_t last_newline_index;
 };
 
 struct Lexer*
@@ -168,6 +173,9 @@ lexer_create(char* characters, size_t character_count)
    lexer->current_index     = 0;
    lexer->current_character = lexer->characters[0];
 
+   lexer->encountered_newlines = 0;
+   lexer->last_newline_index   = 0;
+
    return lexer;
 }
 
@@ -182,6 +190,12 @@ lexer_free(struct Lexer* self)
 void
 lexer_advance(struct Lexer* self)
 {
+   if(self->current_character == '\n')
+   {
+      self->encountered_newlines++;
+      self->last_newline_index = self->current_index;
+   }
+
    if(self->current_index + 1 < self->character_count)
    {
       self->current_index++;
@@ -251,32 +265,40 @@ lexer_number(struct Lexer* self)
    vector_append(self->tokens, &identifier_token);
 }
 
-#define LEX_RESULT       \
+#define LEX_RESULT_CODE  \
    X(AllGood)            \
    X(InvalidCharacter)
 
-enum LexResult
+enum LexResultCode
 {
    #define X(name) name,
-   LEX_RESULT
+   LEX_RESULT_CODE
    #undef X
 };
 
-char*
-lex_result_to_str(enum LexResult result)
+struct LexResult
 {
-   #define X(name) if(result == name) { static char* variable = #name; return variable; }
-   LEX_RESULT
+   enum LexResultCode code;
+   // when result != AllGood
+   char* error_message;
+};
+   
+
+char*
+lex_result_to_str(enum LexResultCode code)
+{
+   #define X(name) if(code == name) { static char* variable = #name; return variable; }
+   LEX_RESULT_CODE
    #undef X
 
    ASSERT("no execution path leads here" && false);
 }
    
-enum LexResult
+struct LexResult
 lexer_lex(struct Lexer* self)
 {
    char magic_compiler_blocker = '&';
-
+   
    while(!(self->end_of_characters))
    {
       if(self->current_character == magic_compiler_blocker)
@@ -328,10 +350,33 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
-      return InvalidCharacter;
+      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
+      // make both 1-indexed
+      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
+      size_t line   = self->encountered_newlines + 1;
+
+      static char error_message[256];
+      snprintf
+      (
+         error_message, sizeof(error_message),
+         "invalid character '%c' encountered on line %zu, column %zu",
+         self->current_character,line, column
+      );
+
+      return
+      (struct LexResult)
+      {
+      .code          = InvalidCharacter,
+      .error_message = error_message
+      };
    }
-   
-   return AllGood;
+
+   return
+   (struct LexResult)
+   {
+   .code          = AllGood,
+   .error_message = NULL
+   };
 }
 
 
@@ -359,11 +404,11 @@ main(void)
 
    // (f)lex
    struct Lexer* lexer = lexer_create(file_content_buffer, fread_file_byte_count);
-   enum LexResult result = lexer_lex(lexer);
+   struct LexResult result = lexer_lex(lexer);
 
-   if(result != AllGood)
+   if(result.code != AllGood)
    {
-      printf("lexer encountered an error: %s\n", lex_result_to_str(result));
+      printf("[LEXER ERROR][%s]: %s\n", lex_result_to_str(result.code), result.error_message);
       return -1;
    }
 

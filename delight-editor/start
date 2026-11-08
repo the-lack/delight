@@ -1,4 +1,7 @@
-score = 123;*
+score = 123;
+scoreTwo = score;
+scoreTh*ree = score;
+scoreThree = score;
 
 &&&&&&&& magic compilator blocker &&&&&&&&
 
