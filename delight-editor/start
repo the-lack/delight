@@ -46,7 +46,6 @@ if (finalScore > threshold && isActive) {
     print("Status: FAILED\n");
 }
 
-\\\\ magic compilator blocker \\\
 
 // 4. Iteration (while loop) with arithmetic, assignment, and modulo operators
 int counter = 0;
@@ -60,6 +59,8 @@ while (counter < 5) {
     }
     counter = counter + 1;
 }
+
+\\\\ magic compilator blocker \\\
 
 // 5. Final state check and reporting
 if (accumulator != 0) {

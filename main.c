@@ -42,6 +42,7 @@ do {                                     \
    X(Equal)            \
    X(PlusOperator)     \
    X(MinusOperator)    \
+   X(MultOperator)     \
    X(If)               \
    X(Else)             \
    X(ParenOpen)        \
@@ -49,6 +50,7 @@ do {                                     \
    X(BracketOpen)      \
    X(BracketClose)     \
    X(AndOperator)      \
+   X(ModOperator)      \
    X(StatementEnd)    
 
 /* part vector */
@@ -275,7 +277,8 @@ const char *const keywords[] =
    "bool",
    "if",
    "else",
-   "print"
+   "print",
+   "while"
 };
 
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
@@ -553,19 +556,6 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
-      if(self->current_character == '=')
-      {
-         struct Token identifier_token =
-         {
-           .value_ptr = self->characters + self->current_index,
-           .len       = 1,
-           .kind      = Assignment
-         };
-         vector_append(self->tokens, &identifier_token);
-         lexer_advance(self);
-         continue;
-      }
-
       if(self->current_character == ';')
       {
          struct Token identifier_token =
@@ -631,6 +621,31 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
+      if(self->current_character == '=')
+      {
+         char* lexeme_ptr = self->characters + self->current_index;
+         struct Token established_token;
+
+         lexer_advance(self);
+
+         if(self->current_character == '=')
+         {
+            established_token.len        = 2;
+            established_token.kind       = Equal;
+            established_token.value_ptr  = lexeme_ptr;
+            // prepare the next one
+            lexer_advance(self);
+         }
+         else
+         {
+            established_token.len        = 1;
+            established_token.kind       = Assignment;
+            established_token.value_ptr  = lexeme_ptr;            
+         }
+         vector_append(self->tokens, &established_token);
+         continue;
+      }      
+
       if(self->current_character == '<')
       {
          char* lexeme_ptr = self->characters + self->current_index;
@@ -684,6 +699,34 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
+      if(self->current_character == '*')
+      {
+         struct Token established_token =
+         {
+            .kind      = MultOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+
+      if(self->current_character == '%')
+      {
+         struct Token established_token =
+         {
+            .kind      = ModOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }      
+      
       if(self->current_character == '(')
       {
          struct Token established_token =
@@ -822,7 +865,7 @@ main(void)
       return -1;
    }
 
-   char file_content_buffer[1024];
+   char file_content_buffer[2048];
 
    size_t fread_file_byte_count = fread(file_content_buffer, sizeof(char), sizeof(file_content_buffer), compiled_file);
    if(0 != ferror(compiled_file))
