@@ -108,6 +108,25 @@ enum TokenKind
    #undef X
 };
 
+#define LEX_RESULT_CODE  \
+   X(AllGood)            \
+   X(DifferentExpected)  \
+   X(InvalidCharacter)
+
+enum LexResultCode
+{
+   #define X(name) name,
+   LEX_RESULT_CODE
+   #undef X
+};
+
+struct LexResult
+{
+   enum LexResultCode code;
+   // when result != AllGood
+   char* error_message;
+}; 
+
 char*
 token_kind_to_str(enum TokenKind kind)
 {
@@ -221,9 +240,22 @@ lexer_peek(struct Lexer* self)
    return NULL;
 }
 
+char*
+lexer_lookahead(struct Lexer* self, size_t by)
+{
+   if(self->current_index + by < self->character_count)
+   {
+      return &self->characters[self->current_index + 1];
+   }
+
+   return NULL;
+}
+
+
 const char *const keywords[] =
 {
-   "int"
+   "int",
+   "float"
 };
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
 
@@ -266,12 +298,13 @@ lexer_identifier_or_keyword(struct Lexer* self)
    vector_append(self->tokens, &established_token);
 }
 
-void
+struct LexResult
 lexer_number(struct Lexer* self)
 {
    char*  start_ptr            = self->characters + self->current_index;
    size_t lexeme_length        = 1; // single char initially
 
+   // integer literal
    lexer_advance(self);
    while(!self->end_of_characters && is_numeric(self->current_character))
    {
@@ -279,35 +312,63 @@ lexer_number(struct Lexer* self)
       lexer_advance(self);
    }
 
-   struct Token identifier_token =
+   struct Token identified_token =
    {
      .value_ptr = start_ptr,
      .len       = lexeme_length,
      .kind      = IntegerLiteral
    };
 
-   vector_append(self->tokens, &identifier_token);
+   // float literal expansion 
+   if(self->current_character == '.')
+   {
+      lexer_advance(self);
+      lexeme_length += 1;
+
+      if(!is_numeric(self->current_character))
+      {
+         size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
+         // make both 1-indexed
+         size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
+         size_t line   = self->encountered_newlines + 1;      
+      
+         static char error_message[256];
+         snprintf
+         (
+            error_message, sizeof(error_message),
+            "unexpected character '%c' on line %zu, column %zu following float dot '.', expected digits to follow",
+            self->current_character, line, column
+         );
+
+         return
+         (struct LexResult)
+         {
+            .code = DifferentExpected,
+            .error_message = error_message
+         };
+      }
+
+      while(!self->end_of_characters && is_numeric(self->current_character))
+      {
+         ++lexeme_length; 
+         lexer_advance(self);         
+      }
+
+      identified_token.kind      = FloatLiteral;
+      identified_token.len       = lexeme_length;
+      identified_token.value_ptr = start_ptr;
+      
+   }
+
+   vector_append(self->tokens, &identified_token);
+
+   return
+   (struct LexResult)
+   {
+      .code = AllGood,
+      .error_message = NULL
+   };
 }
-
-#define LEX_RESULT_CODE  \
-   X(AllGood)            \
-   X(DifferentExpected)  \
-   X(InvalidCharacter)
-
-enum LexResultCode
-{
-   #define X(name) name,
-   LEX_RESULT_CODE
-   #undef X
-};
-
-struct LexResult
-{
-   enum LexResultCode code;
-   // when result != AllGood
-   char* error_message;
-};
-
 struct LexResult
 lexer_comment(struct Lexer* self)
 {
@@ -429,7 +490,8 @@ lexer_lex(struct Lexer* self)
 
       if(is_numeric(self->current_character))
       {
-         lexer_number(self);
+         struct LexResult result = lexer_number(self);
+         if(result.code != AllGood) { return result; }
          continue;
       }
 
@@ -501,9 +563,9 @@ main(void)
       
       printf
       (
-       "kind '%s' | value: '%.*s'\n",
+       "kind '%s' | value: '%.*s' | length: %zu'\n",
        token_kind_to_str(token->kind),
-       (int)token->len, (char*)token->value_ptr
+       (int)token->len, (char*)token->value_ptr, token->len
       );
    }
 

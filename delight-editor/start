@@ -13,9 +13,12 @@ int score = 100;
 
 something123
 
-&&&&&&&& magic compilator blocker &&&&&&&&
 
 float threshold = 85.5;
+float threshold2 = 853819.518;
+
+&&&&&&&& magic compilator blocker &&&&&&&&
+
 char* user_name = "CompilerTester";
 bool is_active = true;
 
