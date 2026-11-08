@@ -469,7 +469,6 @@ lexer_string(struct Lexer* self)
 
    while(!self->end_of_characters && self->current_character != '"')
    {
-      printf("character: '%c' [ASCII: %d]\n", self->current_character, (int)self->current_character);      
       ++lexeme_length;
       lexer_advance(self);
    }
