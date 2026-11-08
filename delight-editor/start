@@ -5,11 +5,14 @@ scoreThree = score;
 
 int anotherscore = 2;
 
-&&&&&&&& magic compilator blocker &&&&&&&&
 
 // 1. Variable declarations across multiple types with literals
+
+
 int score = 100;
 
+
+&&&&&&&& magic compilator blocker &&&&&&&&
 
 float threshold = 85.5;
 char* user_name = "CompilerTester";

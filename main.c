@@ -33,6 +33,7 @@ do {                                     \
    X(FloatLiteral)     \
    X(StringLiteral)    \
    X(BooleanLiteral)   \
+   X(Comment)          \
    X(StatementEnd)    
 
 /* part vector */
@@ -130,7 +131,8 @@ is_alpha(char character)
    bool is_uppercase_ascii = character >= 65 && character <= 90;
    bool is_lowercase_ascii = character >= 97 && character <= 122;
 
-   if(is_uppercase_ascii || is_lowercase_ascii) {
+   if(is_uppercase_ascii || is_lowercase_ascii)
+   {
       return true;
    }
 
@@ -223,6 +225,7 @@ const char *const keywords[] =
 {
    "int"
 };
+size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
 
 void
 lexer_identifier_or_keyword(struct Lexer* self)
@@ -238,9 +241,6 @@ lexer_identifier_or_keyword(struct Lexer* self)
       lexer_advance(self);
    }
 
-   size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
-
-
    for(size_t i = 0; i<keywords_length; i++)
    {
       const char* current_keyword = keywords[i];
@@ -250,7 +250,6 @@ lexer_identifier_or_keyword(struct Lexer* self)
 
       if(0 == strncmp(current_keyword, start_ptr, lexeme_length))
       {
-         printf("keywordzik");
          established_token.value_ptr = start_ptr;
          established_token.len       = lexeme_length;
          established_token.kind      = KeywordType;
@@ -292,6 +291,7 @@ lexer_number(struct Lexer* self)
 
 #define LEX_RESULT_CODE  \
    X(AllGood)            \
+   X(DifferentExpected)  \
    X(InvalidCharacter)
 
 enum LexResultCode
@@ -307,7 +307,58 @@ struct LexResult
    // when result != AllGood
    char* error_message;
 };
-   
+
+struct LexResult
+lexer_comment(struct Lexer* self)
+{
+   char* start_ptr = self->characters + self->current_index;
+   size_t lexeme_length = 1; // single char initially
+   struct Token established_token;
+
+   lexer_advance(self);
+
+   if(self->current_character != '/')
+   {
+      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
+      // make both 1-indexed
+      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
+      size_t line   = self->encountered_newlines + 1;      
+      
+      static char error_message[256];
+      snprintf
+      (
+         error_message, sizeof(error_message),
+         "unexpected character '%c' on line %zu, column %zu following comment start '/'. expected another '/'",
+         self->current_character, line, column
+      );
+
+      return
+      (struct LexResult)
+      {
+         .code = DifferentExpected,
+         .error_message = error_message
+      };
+   }
+
+   while(!self->end_of_characters && self->current_character != '\n')
+   {
+      ++lexeme_length;
+      lexer_advance(self);
+   }
+
+   established_token.value_ptr = start_ptr;
+   established_token.len       = lexeme_length;
+   established_token.kind      = Comment;
+
+   vector_append(self->tokens, &established_token);
+
+   return
+   (struct LexResult)
+   {
+      .code          = AllGood,
+      .error_message = NULL,
+   };
+}
 
 char*
 lex_result_to_str(enum LexResultCode code)
@@ -337,12 +388,6 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
-      if(is_alpha(self->current_character))
-      {
-         lexer_identifier_or_keyword(self);
-         continue;
-      }
-
       if(self->current_character == '=')
       {
          struct Token identifier_token =
@@ -367,7 +412,20 @@ lexer_lex(struct Lexer* self)
          vector_append(self->tokens, &identifier_token);
          lexer_advance(self);
          continue;
+      }
+
+      if(self->current_character == '/')
+      {
+         struct LexResult result = lexer_comment(self);
+         if(result.code != AllGood) { return result; }
+         continue;
       }      
+
+      if(is_alpha(self->current_character))
+      {
+         lexer_identifier_or_keyword(self);
+         continue;
+      }
 
       if(is_numeric(self->current_character))
       {
@@ -385,7 +443,7 @@ lexer_lex(struct Lexer* self)
       (
          error_message, sizeof(error_message),
          "invalid character '%c' encountered on line %zu, column %zu",
-         self->current_character,line, column
+         self->current_character, line, column
       );
 
       return
