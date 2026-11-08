@@ -51,6 +51,7 @@ do {                                     \
    X(ParenClose)       \
    X(BracketOpen)      \
    X(BracketClose)     \
+   X(Comma)            \
    X(AndOperator)      \
    X(ModOperator)      \
    X(StatementEnd)    
@@ -280,7 +281,8 @@ const char *const keywords[] =
    "if",
    "else",
    "print",
-   "while"
+   "while",
+   "return"
 };
 
 size_t keywords_length = sizeof(keywords) / sizeof(keywords[0]);
@@ -552,7 +554,11 @@ lexer_lex(struct Lexer* self)
          break;
       }
 
-      if(self->current_character == ' ' || self->current_character == '\n')
+      if(self->current_character == ' '
+         ||
+         self->current_character == '\n'
+         ||
+         self->current_character == '\t')
       {
          lexer_advance(self);
          continue;
@@ -784,6 +790,20 @@ lexer_lex(struct Lexer* self)
          lexer_advance(self); // prepare next
          continue;
       }
+
+      if(self->current_character == ',')
+      {
+         struct Token established_token =
+         {
+            .kind      = Comma,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }      
 
       if(self->current_character == '!')
       {

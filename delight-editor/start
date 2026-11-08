@@ -73,7 +73,6 @@ if(!accumulator)
     print("hey");
 }
 
-\\\\ magic compilator blocker \\\
 
 
 // pause
@@ -83,8 +82,12 @@ int add(int a, int b) {
 	return c;
 }
 
+\\\\ magic compilator blocker \\\
+
+
 int my_var = add(1, 2);
 print(my_var);
+
 
 &&&&&&&& magic compilator blocker &&&&&&&&
 
