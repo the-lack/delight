@@ -40,6 +40,8 @@ do {                                     \
    X(MoreOrEqual)      \
    X(LessOrEqual)      \
    X(Equal)            \
+   X(PlusOperator)     \
+   X(MinusOperator)    \
    X(StatementEnd)    
 
 /* part vector */
@@ -643,7 +645,36 @@ lexer_lex(struct Lexer* self)
          }
          vector_append(self->tokens, &established_token);
          continue;
-      }      
+      }
+
+      if(self->current_character == '+')
+      {
+         struct Token established_token =
+         {
+            .kind      = PlusOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+
+      if(self->current_character == '-')
+      {
+         struct Token established_token =
+         {
+            .kind      = MinusOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         vector_append(self->tokens, &established_token);
+         lexer_advance(self); // prepare next
+         continue;
+      }
+      
 
       size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
       // make both 1-indexed

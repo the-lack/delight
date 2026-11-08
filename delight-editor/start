@@ -32,6 +32,11 @@ bool comparison2 = 5>=5;
 bool comparison3 = 6 < 5;
 bool comparison4 = 6 <= 5;
 
+
+int addition = 3 + 1;
+
+int subtraction = 3 - 1;
+
 &&&&&&&& magic compilator blocker &&&&&&&&
 
 float final_score = (float)score + bonus - 5.0;
