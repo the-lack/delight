@@ -82,14 +82,11 @@ int add(int a, int b) {
 	return c;
 }
 
-\\\\ magic compilator blocker \\\
 
 
 int my_var = add(1, 2);
 print(my_var);
 
-
-&&&&&&&& magic compilator blocker &&&&&&&&
 
 int max(int x, int y) {
     if (x > y) {
@@ -101,7 +98,7 @@ int max(int x, int y) {
 
 int highest = max(15, 42);
 
-&&&&&&&& magic compilator blocker &&&&&&&&
+
 
 int sum_to_n(int n) {
     int total = 0;
@@ -115,7 +112,6 @@ int sum_to_n(int n) {
 
 int total_sum = sum_to_n(5); // Should compute 15
 
-&&&&&&&& magic compilator blocker &&&&&&&&
 
 int calculate(int a, int b, int c) {
     int temp = a * b;
@@ -123,9 +119,10 @@ int calculate(int a, int b, int c) {
     return final_val;
 }
 
+
 int math_result = calculate(10, 3, 5); // Should compute 25
 
-&&&&&&&& magic compilator blocker &&&&&&&&
+
 
 int factorial(int n) {
     if (n <= 1) {
@@ -139,26 +136,4 @@ int fact_val = factorial(4); // Should compute 24
 
 float final_score = (float)score + bonus - 5.0;
 
-&&&&&&&& magic compilator blocker &&&&&&&&
-
-abcdef = 123 + 456
-
-abcdef_str = "my integer"
-
-print(abcdef_str)
-
-my_string_stuff = "my thingies"
-
-print my_string_stuff
-
-my_string_stuff2 = /my integer thingies ?abcdef strings
-
-my_string_stuff3 = /?my_string_stuff my integer ?abcdef cute
-
-print my_string_stuff3
-
-print my_string_stuff2
-
-print my_string_stuff
-
-my_string_stuff5 = /stuff I will expect
+\\\\ magic compilator blocker \\\

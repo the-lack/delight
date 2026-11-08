@@ -911,7 +911,7 @@ main(void)
       return -1;
    }
 
-   char file_content_buffer[2048];
+   char file_content_buffer[4096];
 
    size_t fread_file_byte_count = fread(file_content_buffer, sizeof(char), sizeof(file_content_buffer), compiled_file);
    if(0 != ferror(compiled_file))
