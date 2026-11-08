@@ -35,6 +35,11 @@ do {                                     \
    X(StringLiteral)    \
    X(BooleanLiteral)   \
    X(Comment)          \
+   X(MoreThan)         \
+   X(LessThan)         \
+   X(MoreOrEqual)      \
+   X(LessOrEqual)      \
+   X(Equal)            \
    X(StatementEnd)    
 
 /* part vector */
@@ -589,6 +594,56 @@ lexer_lex(struct Lexer* self)
          if(result.code != AllGood) { return result; }
          continue;
       }
+
+      if(self->current_character == '>')
+      {
+         char* lexeme_ptr = self->characters + self->current_index;
+         struct Token established_token;
+
+         lexer_advance(self);
+
+         if(self->current_character == '=')
+         {
+            established_token.len        = 2;
+            established_token.kind       = MoreOrEqual;
+            established_token.value_ptr  = lexeme_ptr;
+            // prepare the next one
+            lexer_advance(self);
+         }
+         else
+         {
+            established_token.len        = 1;
+            established_token.kind       = MoreThan;
+            established_token.value_ptr  = lexeme_ptr;                    
+         }
+         vector_append(self->tokens, &established_token);
+         continue;
+      }
+
+      if(self->current_character == '<')
+      {
+         char* lexeme_ptr = self->characters + self->current_index;
+         struct Token established_token;
+
+         lexer_advance(self);
+
+         if(self->current_character == '=')
+         {
+            established_token.len        = 2;
+            established_token.kind       = LessOrEqual;
+            established_token.value_ptr  = lexeme_ptr;
+            // prepare the next one
+            lexer_advance(self);
+         }
+         else
+         {
+            established_token.len        = 1;
+            established_token.kind       = LessThan;
+            established_token.value_ptr  = lexeme_ptr;                    
+         }
+         vector_append(self->tokens, &established_token);
+         continue;
+      }      
 
       size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
       // make both 1-indexed
