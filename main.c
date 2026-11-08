@@ -40,6 +40,8 @@ do {                                     \
    X(MoreOrEqual)      \
    X(LessOrEqual)      \
    X(Equal)            \
+   X(Inequal)          \
+   X(Negation)         \
    X(PlusOperator)     \
    X(MinusOperator)    \
    X(MultOperator)     \
@@ -782,6 +784,30 @@ lexer_lex(struct Lexer* self)
          lexer_advance(self); // prepare next
          continue;
       }
+
+      if(self->current_character == '!')
+      {
+         struct Token established_token;
+         char* value_ptr = self->characters + self->current_index;
+
+         lexer_advance(self);
+         if('=' == self->current_character)
+         {
+            established_token.kind      = Inequal;
+            established_token.len       = 2;
+            established_token.value_ptr = value_ptr;
+            lexer_advance(self); // prepare next
+         }
+         else
+         {
+            established_token.kind      = Negation;
+            established_token.len       = 1;
+            established_token.value_ptr = value_ptr;
+         }
+            
+         vector_append(self->tokens, &established_token);
+         continue;
+      }      
 
       if('&' == self->current_character)
       {

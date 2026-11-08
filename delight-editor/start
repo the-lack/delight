@@ -60,7 +60,6 @@ while (counter < 5) {
     counter = counter + 1;
 }
 
-\\\\ magic compilator blocker \\\
 
 // 5. Final state check and reporting
 if (accumulator != 0) {
@@ -68,6 +67,13 @@ if (accumulator != 0) {
 } else {
     print("Loop execution yielded zero.\n");
 }
+
+if(!accumulator)
+{
+    print("hey");
+}
+
+\\\\ magic compilator blocker \\\
 
 
 // pause
