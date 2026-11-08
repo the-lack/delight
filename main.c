@@ -225,7 +225,7 @@ lexer_create(char* characters, size_t character_count)
 void
 lexer_free(struct Lexer* self)
 {
-   free(self->tokens);
+   vector_free(self->tokens);
    free(self);
 }
 
