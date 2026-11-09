@@ -1,0 +1,16 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+assignment := typedecl IDENTIFIER assignment "=" ( )
+
+

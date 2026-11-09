@@ -885,6 +885,156 @@ lexer_lex(struct Lexer* self)
    };
 }
 
+/* part parser */
+
+#define NODE_TYPES           \
+        X(NodeScope)         \
+        X(NodeIntegerLiteral)
+
+enum NodeKind
+{
+   #define X(name) name,
+   NODE_TYPES
+   #undef X
+};
+
+struct Node
+{
+   enum NodeKind kind;
+
+   // for NodeIntegerLiteral
+   int value;
+
+   // for NodeScope
+   struct vector* nodes;
+};
+
+struct Parser
+{
+   struct vector* tokens;
+          size_t  token_index;
+          bool    end_of_tokens;
+   struct Node*   root_node; // NodeScope
+};
+
+struct Parser*
+parser_create(struct vector* tokens)
+{
+   // root_node init
+   struct Node*    root_node = malloc(sizeof(struct Node));
+   struct vector*  nodes     = vector_create(sizeof(struct Node));
+   ASSERT(NULL != root_node);
+   root_node->kind   = NodeScope;
+   root_node->nodes  = nodes;
+
+   // parser init
+   struct Parser*  parser = malloc(sizeof(struct Parser));
+   ASSERT(NULL != parser);
+
+   parser->tokens      = tokens;
+   parser->root_node   = root_node;
+   parser->token_index = 0;
+
+   return parser;
+}
+
+// NOTE/TODO: implement actual freeing
+void
+parser_free()
+{
+   return;
+}
+
+struct Token*
+parser_peek(struct Parser* self)
+{
+   if(self->token_index + 1 < self->tokens->element_count)
+   {
+      return (struct Token*)vector_get(self->tokens, self->token_index + 1);
+   }
+
+   return NULL;   
+};
+
+struct Token*
+parser_current(struct Parser* self)
+{
+   return (struct Token*)vector_get(self->tokens, self->token_index);
+}
+
+void
+parser_consume(struct Parser* self)
+{
+   if(self->token_index + 1 < self->tokens->element_count)
+   {
+      self->token_index++;
+      return
+   }
+
+   self->end_of_tokens = true;
+}
+
+void parser_accept(struct Parser* self, TokenKind kind)
+{
+   Token token = (*Token)vector_get(self->vector, self->token_index);
+   if(token.kind == kind)
+   {
+      parser_consume(self);
+      return true;
+   }
+   return false;
+}
+
+void
+parser_expect(struct Parser* self, enum TokenKind kind)
+{
+   if(!parser_accept(self, kind))
+   {
+      ASSERT(false); // NOTE/TODO: better error message
+   }
+}
+
+void
+parser_integer(struct Parser* self)
+{
+   if(parser_accept(self, MinusOperator)
+   {
+      parser_expect(IntegerLiteral)
+   }
+   parser_expect()
+   // parser_accept(self, integer);
+   parser_current(self)->kind == IntegerLiteral;
+}
+
+
+void
+parser_term()
+{
+}
+
+
+
+// void
+// parser_term()
+// {
+// }
+
+// void
+// parser_expression(struct Parser* self)
+// {
+// }
+
+void
+parser_scope(struct Parser* self)
+{
+
+}
+
+void
+parser_parse(struct Parser* parser)
+{
+   parser_scope(parser);
+}
 
 /* part main */
 int
@@ -930,6 +1080,11 @@ main(void)
       );
    }
 
+   // (p)arse
+   struct Parser* parser = parser_create(lexer->tokens);
+   parser_parse(parser);
+
+   parser_free(); // NOTE/TODO: implement actual free
    lexer_free(lexer);
 
    return 0;
