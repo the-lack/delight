@@ -1,0 +1,142 @@
+score = 123;
+
+\\ magic compiler blockade
+
+scoreTwo = score;
+scoreThree = score;
+scoreThree = score;
+
+int anotherscore = 2;
+
+
+// 1. Variable declarations across multiple types with literals
+
+
+int score = 100;
+
+something123
+
+
+float threshold = 85.5;
+float threshold2 = 853819.518;
+
+string username = "CompilerTester";
+
+
+bool isActive = true;
+
+
+// 2. Arithmetic, type casting, and float/int mixing
+float bonus = 15.25;
+
+bool comparison1 = 5 > 6;
+bool comparison2 = 5>=5;
+
+bool comparison3 = 6 < 5;
+bool comparison4 = 6 <= 5;
+
+
+int addition = 3 + 1;
+
+int subtraction = 3 - 1;
+
+
+// 3. Conditional execution (if-else) with relational and logical operators
+if (finalScore > threshold && isActive) {
+    print("Status: PASSED\n");
+    print(username);
+} else {
+    print("Status: FAILED\n");
+}
+
+
+// 4. Iteration (while loop) with arithmetic, assignment, and modulo operators
+int counter = 0;
+int accumulator = 0;
+
+while (counter < 5) {
+    if (counter % 2 == 0) {
+        accumulator = accumulator + (counter * 10);
+    } else {
+        accumulator = accumulator - 5;
+    }
+    counter = counter + 1;
+}
+
+
+// 5. Final state check and reporting
+if (accumulator != 0) {
+    print("Loop execution completed successfully.\n");
+} else {
+    print("Loop execution yielded zero.\n");
+}
+
+if(!accumulator)
+{
+    print("hey");
+}
+
+
+
+// pause
+
+int add(int a, int b) {
+	int c = a + b;
+	return c;
+}
+
+
+
+int my_var = add(1, 2);
+print(my_var);
+
+
+int max(int x, int y) {
+    if (x > y) {
+        return x;
+    } else {
+        return y;
+    }
+}
+
+int highest = max(15, 42);
+
+
+
+int sum_to_n(int n) {
+    int total = 0;
+    int i = 1;
+    while (i <= n) {
+        total = total + i;
+        i = i + 1;
+    }
+    return total;
+}
+
+int total_sum = sum_to_n(5); // Should compute 15
+
+
+int calculate(int a, int b, int c) {
+    int temp = a * b;
+    int final_val = temp - c;
+    return final_val;
+}
+
+
+int math_result = calculate(10, 3, 5); // Should compute 25
+
+
+
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+int fact_val = factorial(4); // Should compute 24
+
+float final_score = (float)score + bonus - 5.0;
+
+\\\\ magic compilator blocker \\\

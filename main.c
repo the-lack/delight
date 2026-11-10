@@ -28,6 +28,7 @@ do {                                     \
 #define TOKENS         \
    X(NoneYet)          \
    X(KeywordType)      \
+   X(IntegerType)      \
    X(Identifier)       \
    X(Assignment)       \
    X(IntegerLiteral)   \
@@ -163,6 +164,8 @@ struct Token
    enum TokenKind kind;
    char* value_ptr;
    size_t len;
+   size_t start_line;   // 1 indexed
+   size_t start_column; // 1 indexed
 };
 
 bool
@@ -195,9 +198,8 @@ struct Lexer
    size_t character_count;
    bool end_of_characters;
 
-   // NOTE: for error location: line X, column Y
-   size_t encountered_newlines;
-   size_t last_newline_index;
+   size_t current_file_line_1indexed;
+   size_t current_file_column_1indexed;
 };
 
 struct Lexer*
@@ -215,8 +217,8 @@ lexer_create(char* characters, size_t character_count)
    lexer->current_index     = 0;
    lexer->current_character = lexer->characters[0];
 
-   lexer->encountered_newlines = 0;
-   lexer->last_newline_index   = 0;
+   lexer->current_file_line_1indexed = 1;
+   lexer->current_file_column_1indexed = 1;
 
    return lexer;
 }
@@ -230,12 +232,28 @@ lexer_free(struct Lexer* self)
 }
 
 void
+lexer_save_token(struct Lexer* self, struct Token token)
+{
+   size_t token_start_line   = self->current_file_line_1indexed;
+   size_t token_start_column = self->current_file_column_1indexed - token.len;
+
+   ASSERT(token_start_column >= 1);
+   ASSERT(token_start_line   >= 1);
+
+   token.start_line   = token_start_line;
+   token.start_column = token_start_column;
+
+   vector_append(self->tokens, &token);
+}
+
+void
 lexer_advance(struct Lexer* self)
 {
+   self->current_file_column_1indexed++;
    if(self->current_character == '\n')
    {
-      self->encountered_newlines++;
-      self->last_newline_index = self->current_index;
+      self->current_file_line_1indexed++;
+      self->current_file_column_1indexed = 1;
    }
 
    if(self->current_index + 1 < self->character_count)
@@ -309,7 +327,12 @@ lexer_identifier_or_keyword(struct Lexer* self)
          established_token.len       = lexeme_length;
          established_token.kind      = KeywordType;
 
-         vector_append(self->tokens, &established_token);
+         if(lexeme_length == 3 && 0 == strncmp("int", start_ptr, 3))
+         {
+            established_token.kind = IntegerType;
+         }
+
+         lexer_save_token(self, established_token);         
          return;
       }
    }
@@ -327,7 +350,7 @@ lexer_identifier_or_keyword(struct Lexer* self)
          established_token.len       = lexeme_length;
          established_token.kind      = BooleanLiteral;
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);         
          return;
       }
    }
@@ -336,7 +359,7 @@ lexer_identifier_or_keyword(struct Lexer* self)
    established_token.len       = lexeme_length;
    established_token.kind      = Identifier;
 
-   vector_append(self->tokens, &established_token);
+   lexer_save_token(self, established_token);
 }
 
 struct LexResult
@@ -357,7 +380,7 @@ lexer_number(struct Lexer* self)
    {
      .value_ptr = start_ptr,
      .len       = lexeme_length,
-     .kind      = IntegerLiteral
+     .kind      = IntegerLiteral,
    };
 
    // float literal expansion 
@@ -367,18 +390,13 @@ lexer_number(struct Lexer* self)
       lexeme_length += 1;
 
       if(!is_numeric(self->current_character))
-      {
-         size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
-         // make both 1-indexed
-         size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
-         size_t line   = self->encountered_newlines + 1;      
-      
+      {      
          static char error_message[256];
          snprintf
          (
             error_message, sizeof(error_message),
             "unexpected character '%c' on line %zu, column %zu following float dot '.', expected digits to follow",
-            self->current_character, line, column
+            self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
          );
 
          return
@@ -401,7 +419,7 @@ lexer_number(struct Lexer* self)
       
    }
 
-   vector_append(self->tokens, &identified_token);
+   lexer_save_token(self, identified_token);
 
    return
    (struct LexResult)
@@ -421,18 +439,13 @@ lexer_comment(struct Lexer* self)
    lexer_advance(self);
 
    if(self->current_character != '/')
-   {
-      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
-      // make both 1-indexed
-      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
-      size_t line   = self->encountered_newlines + 1;      
-      
+   {     
       static char error_message[256];
       snprintf
       (
          error_message, sizeof(error_message),
          "unexpected character '%c' on line %zu, column %zu following comment start '/'. expected another '/'",
-         self->current_character, line, column
+         self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
       );
 
       return
@@ -453,7 +466,7 @@ lexer_comment(struct Lexer* self)
    established_token.len       = lexeme_length;
    established_token.kind      = Comment;
 
-   vector_append(self->tokens, &established_token);
+   lexer_save_token(self, established_token);
 
    return
    (struct LexResult)
@@ -481,17 +494,11 @@ lexer_string(struct Lexer* self)
    if(self->current_character != '"')
    {
       static char error_message[256];
-
-      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
-      // make both 1-indexed
-      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
-      size_t line   = self->encountered_newlines + 1;      
-      
       snprintf
       (
          error_message, sizeof(error_message),
          "missing string ending for string starting at line %zu, column %zu",
-         line, column
+         self->current_file_line_1indexed, self->current_file_column_1indexed
       );
       return
       (struct LexResult)
@@ -509,7 +516,7 @@ lexer_string(struct Lexer* self)
    established_token.len       = lexeme_length;
    established_token.kind      = StringLiteral;
 
-   vector_append(self->tokens, &established_token);
+   lexer_save_token(self, established_token);
 
    return
    (struct LexResult)
@@ -558,9 +565,9 @@ lexer_lex(struct Lexer* self)
          {
            .value_ptr = self->characters + self->current_index,
            .len       = 1,
-           .kind      = StatementEnd
+           .kind      = StatementEnd,           
          };
-         vector_append(self->tokens, &identifier_token);
+         lexer_save_token(self, identifier_token);
          lexer_advance(self);
          continue;
       }
@@ -613,7 +620,7 @@ lexer_lex(struct Lexer* self)
             established_token.kind       = MoreThan;
             established_token.value_ptr  = lexeme_ptr;                    
          }
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -638,7 +645,7 @@ lexer_lex(struct Lexer* self)
             established_token.kind       = Assignment;
             established_token.value_ptr  = lexeme_ptr;            
          }
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          continue;
       }      
 
@@ -663,7 +670,7 @@ lexer_lex(struct Lexer* self)
             established_token.kind       = LessThan;
             established_token.value_ptr  = lexeme_ptr;                    
          }
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -676,7 +683,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -690,7 +697,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -704,7 +711,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -718,7 +725,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }      
@@ -732,7 +739,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -746,7 +753,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }      
@@ -760,7 +767,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -774,7 +781,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }
@@ -788,7 +795,7 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
          continue;
       }      
@@ -813,7 +820,7 @@ lexer_lex(struct Lexer* self)
             established_token.value_ptr = value_ptr;
          }
             
-         vector_append(self->tokens, &established_token);
+         lexer_save_token(self, established_token);
          continue;
       }      
 
@@ -830,22 +837,17 @@ lexer_lex(struct Lexer* self)
                .len       = 2,
                .value_ptr = value_ptr
             };            
-            vector_append(self->tokens, &established_token);
+            lexer_save_token(self, established_token);
             lexer_advance(self); // prepare next
             continue;
          }
-
-         size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
-         // make both 1-indexed
-         size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
-         size_t line   = self->encountered_newlines + 1;
 
          static char error_message[256];
          snprintf
          (
             error_message, sizeof(error_message),
             "unexpected character '%c' encountered on line %zu, column %zu. '&' should be followed by another '&' to create an AND statement",
-            self->current_character, line, column
+            self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
          );
 
          return
@@ -856,17 +858,12 @@ lexer_lex(struct Lexer* self)
          };
       }      
       
-      size_t account_for_being_on_index_0 = self->current_index == 0 ? 1 : 0;
-      // make both 1-indexed
-      size_t column = self->current_index - self->last_newline_index + account_for_being_on_index_0; 
-      size_t line   = self->encountered_newlines + 1;
-
       static char error_message[256];
       snprintf
       (
          error_message, sizeof(error_message),
          "invalid character '%c' encountered on line %zu, column %zu",
-         self->current_character, line, column
+         self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
       );
 
       return
@@ -886,7 +883,6 @@ lexer_lex(struct Lexer* self)
 }
 
 /* part parser */
-
 #define NODE_TYPES           \
         X(NodeScope)         \
         X(NodeIntegerLiteral)
@@ -917,6 +913,7 @@ struct Parser
    struct Node*   root_node; // NodeScope
 };
 
+
 struct Parser*
 parser_create(struct vector* tokens)
 {
@@ -945,95 +942,15 @@ parser_free()
    return;
 }
 
-struct Token*
-parser_peek(struct Parser* self)
-{
-   if(self->token_index + 1 < self->tokens->element_count)
-   {
-      return (struct Token*)vector_get(self->tokens, self->token_index + 1);
-   }
-
-   return NULL;   
-};
-
-struct Token*
-parser_current(struct Parser* self)
-{
-   return (struct Token*)vector_get(self->tokens, self->token_index);
-}
-
-void
-parser_consume(struct Parser* self)
-{
-   if(self->token_index + 1 < self->tokens->element_count)
-   {
-      self->token_index++;
-      return
-   }
-
-   self->end_of_tokens = true;
-}
-
-void parser_accept(struct Parser* self, TokenKind kind)
-{
-   Token token = (*Token)vector_get(self->vector, self->token_index);
-   if(token.kind == kind)
-   {
-      parser_consume(self);
-      return true;
-   }
-   return false;
-}
-
-void
-parser_expect(struct Parser* self, enum TokenKind kind)
-{
-   if(!parser_accept(self, kind))
-   {
-      ASSERT(false); // NOTE/TODO: better error message
-   }
-}
-
-void
-parser_integer(struct Parser* self)
-{
-   if(parser_accept(self, MinusOperator)
-   {
-      parser_expect(IntegerLiteral)
-   }
-   parser_expect()
-   // parser_accept(self, integer);
-   parser_current(self)->kind == IntegerLiteral;
-}
-
-
-void
-parser_term()
-{
-}
-
-
-
-// void
-// parser_term()
-// {
-// }
-
-// void
-// parser_expression(struct Parser* self)
-// {
-// }
-
-void
-parser_scope(struct Parser* self)
-{
-
-}
-
 void
 parser_parse(struct Parser* parser)
 {
-   parser_scope(parser);
+  struct Token* current_token = vector_get(parser->tokens, parser->token_index);
+
+  if(NULL != current_token && current_token->kind != IntegerType)
+  {
+     printf("error bozo, expected integer at line %zu, column %zu. instead got %s", current_token->start_line, current_token->start_column, token_kind_to_str(current_token->kind));
+  }
 }
 
 /* part main */
@@ -1041,7 +958,7 @@ int
 main(void)
 {
    // read the file
-   FILE* compiled_file = fopen("./delight-editor/start", "r");
+   FILE* compiled_file = fopen("./delight-editor/start_parser", "r");
 
    if(NULL == compiled_file)
    {

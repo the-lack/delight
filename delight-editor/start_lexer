@@ -1,3 +1,5 @@
+// this file was done for testing the lexer
+
 score = 123;
 scoreTwo = score;
 scoreThree = score;
