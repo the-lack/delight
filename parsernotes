@@ -1,12 +1,35 @@
+what should i support first?
+
+- assignment of arbitrary (positive and negative) integers with addition, subtraction, multiplication, division
+
+parse_program() -> parse_something():
+	expect type
+	expect identifier
+	expect equality sign
+	expect integer sign
+	<here should go some sort of recurrency?>
+	and this is where we create first node
+
+int a = (-5 + 1) * 7 + 8 / (2 + 2)
+int a = -5 + 1 * 7 + 8 / (2 + 2)
 
 
+                      * - this is a scope node
+					  |
+				 	store
+					   type: int (typedecl)
+					   identifier: a
+					   value:
+
+					     
 
 
+assignment = (-)? <integer>
 
+expression = 
 
-
-
-
+integer_literal = (1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0)+
+			      // can be 000001 btw
 
 
 
