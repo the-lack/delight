@@ -55,6 +55,7 @@ do {                                     \
    X(Comma)            \
    X(AndOperator)      \
    X(ModOperator)      \
+   X(EndOfTokens)      \
    X(StatementEnd)    
 
 /* part vector */
@@ -874,6 +875,16 @@ lexer_lex(struct Lexer* self)
       };
    }
 
+   struct Token end_of_tokens =
+   {
+      .kind         = EndOfTokens,
+      .value_ptr    = NULL,
+      .len          = 0,
+      .start_line   = self->current_file_line_1indexed,
+      .start_column = self->current_file_column_1indexed
+   };
+   lexer_save_token(self, end_of_tokens);
+
    return
    (struct LexResult)
    {
@@ -885,7 +896,9 @@ lexer_lex(struct Lexer* self)
 /* part parser */
 #define NODE_TYPES           \
         X(NodeScope)         \
-        X(NodeIntegerLiteral)
+        X(NodeVariableBind)  \
+        X(NodeNumber)        \
+        X(NodeBinary)
 
 enum NodeKind
 {
@@ -898,18 +911,40 @@ struct Node
 {
    enum NodeKind kind;
 
-   // for NodeIntegerLiteral
-   int value;
-
-   // for NodeScope
+   // NodeScope
    struct vector* nodes;
+   // NodeScope
+
+   // NodeVariableBind
+   struct Node* value;
+   // NodeVariableBind
+
+   // NodeBinary
+   enum TokenKind operand;
+   struct Node* left;
+   struct Node* right;
+   // NodeBinary
+
+   // NodeNumber
+   struct Token* token_ptr;
+   // NodeNumber
 };
+
+struct Node*
+node_create()
+{
+   // NOTE/TODO: suboptimal, memory arena maybe?
+   struct Node* node = malloc(sizeof(struct Node));
+   ASSERT(node != NULL);
+
+   return node;
+}
 
 struct Parser
 {
    struct vector* tokens;
-          size_t  token_index;
-          bool    end_of_tokens;
+   struct Token*  current_token;
+   size_t         token_index;
    struct Node*   root_node; // NodeScope
 };
 
@@ -917,20 +952,11 @@ struct Parser
 struct Parser*
 parser_create(struct vector* tokens)
 {
-   // root_node init
-   struct Node*    root_node = malloc(sizeof(struct Node));
-   struct vector*  nodes     = vector_create(sizeof(struct Node));
-   ASSERT(NULL != root_node);
-   root_node->kind   = NodeScope;
-   root_node->nodes  = nodes;
-
    // parser init
    struct Parser*  parser = malloc(sizeof(struct Parser));
    ASSERT(NULL != parser);
 
-   parser->tokens      = tokens;
-   parser->root_node   = root_node;
-   parser->token_index = 0;
+   parser->tokens = tokens;
 
    return parser;
 }
@@ -943,14 +969,109 @@ parser_free()
 }
 
 void
-parser_parse(struct Parser* parser)
+parser_advance(struct Parser* self)
 {
-  struct Token* current_token = vector_get(parser->tokens, parser->token_index);
+   ASSERT(self->token_index + 1 < self->tokens->element_count);
 
-  if(NULL != current_token && current_token->kind != IntegerType)
-  {
-     printf("error bozo, expected integer at line %zu, column %zu. instead got %s", current_token->start_line, current_token->start_column, token_kind_to_str(current_token->kind));
-  }
+   self->token_index = self->token_index + 1;
+   self->current_token = vector_get(self->tokens, self->token_index);
+}
+
+void
+parser_assert(struct Parser* self, enum TokenKind expected_kind)
+{
+   if(self->current_token->kind != expected_kind)
+   {
+      fprintf
+      (
+        stderr,
+        "[PARSE ERROR] expected '%s', received '%s' at line %zu, column %zu\n",
+        token_kind_to_str(expected_kind), token_kind_to_str(self->current_token->kind),
+        self->current_token->start_line, self->current_token->start_column
+      );
+      abort();
+   }
+
+   parser_advance(self);
+}
+
+bool
+parser_accept(struct Parser* self, enum TokenKind expected_kind)
+{
+   if(self->current_token->kind != expected_kind)
+   {
+      parser_advance(self);
+      return true;
+   }
+
+   return false;
+}
+
+struct Node*
+parser_parse_expression(struct Parser* self)
+{
+   parser_assert(self, IntegerLiteral);
+
+   struct Node* number_node = node_create();
+   number_node->kind        = NodeNumber;
+   number_node->token_ptr   = self->current_token;
+
+   if(parser_accept(self, MinusOperator))
+   {
+      struct Node* bin_node   = node_create();
+      struct Node* expression = parser_parse_expression(self);
+
+      bin_node->kind  = NodeBinary;
+      bin_node->left  = number_node;
+      bin_node->right = expression;
+      return bin_node;
+   }
+   else if(parser_accept(self, PlusOperator))
+   {
+      struct Node* bin_node   = node_create();
+      struct Node* expression = parser_parse_expression(self);
+
+      bin_node->kind  = NodeBinary;
+      bin_node->left  = number_node;
+      bin_node->right = expression;
+      return bin_node;
+   }
+
+   return number_node;
+}
+
+void
+parser_parse_variable_bind(struct Parser* self)
+{
+      parser_assert(self, IntegerType);
+      parser_assert(self, Identifier);
+      parser_assert(self, Assignment);
+
+      struct Node* expression = parser_parse_expression(self);
+      parser_assert(self, StatementEnd);
+}
+
+void
+parser_parse(struct Parser* self)
+{
+   // root_node init
+   struct Node*    root_node = node_create();
+   struct vector*  nodes     = vector_create(sizeof(struct Node));
+   root_node->kind   = NodeScope;
+   root_node->nodes  = nodes;
+   self->root_node = root_node;
+
+   // initialize first token
+   self->token_index = 0;
+   self->current_token = vector_get(self->tokens, self->token_index);
+   while(true)
+   {
+      parser_parse_variable_bind(self);
+
+      if(self->current_token->kind == EndOfTokens) { break; }
+
+      parser_advance(self);
+   }
 }
 
 /* part main */
@@ -1002,6 +1123,8 @@ main(void)
    parser_parse(parser);
 
    parser_free(); // NOTE/TODO: implement actual free
+
+   // NOTE/TODO: parser relies on lexers tokens for certain nodes
    lexer_free(lexer);
 
    return 0;

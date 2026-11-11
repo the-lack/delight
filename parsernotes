@@ -37,3 +37,102 @@ integer_literal = (1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0)+
 assignment := typedecl IDENTIFIER assignment "=" ( )
 
 
+# new thing creation
+
+type_declaration
+	-> identifier
+		-> paren_open
+			-> type_declaration + identifier
+			-> (type_declaration + identifier,)*
+			-> nothing
+				-> paren_closed
+					-> bracket open
+						-> <actual function code, not sure how to express>
+							-> bracket closed
+		->
+
+
+
+
+table = [
+	[TypeDeclaration, Identifier, Assignment, Expression],
+	[Type]
+]
+
+tokens = [...]
+
+expected_token = TypeDeclaration
+
+for token in tokens:
+
+
+
+
+
+
+
+
+
+
+
+
+
+int abc = -1 + (-2) * 3 - 4 / (3 - 1);
+
+int abc = 1 + 2 - 3 + 4 - 3 + 1;
+
+parse_creation():
+	expect(IntTypeDecl)
+
+	decl = create_node(kind = IntTypeDecl)
+	expect(Identifier)
+	ident = create_node(kind = Identifier)
+	decl.child = ident;
+	expect(Assignment)
+	assig = create_node(kind = Assignment)
+	ident.child = assig;
+
+	assig_expr = parse_expr()
+	assig.child = assig_expr
+
+	return decl;
+
+parse_expr():
+
+	# parse_leaf()
+
+	expect(IntegerLiIteral)
+
+	parse_expr()
+
+	# parse_expr()
+	# expect()
+
+
+# add, subtract
+parse_the_rest():
+	negated = false
+	if(accept(-))
+	{
+		negated = true;
+	}
+
+	if(!accept(IntegerLiteral))
+	{
+		return Null;
+	}
+
+	lit = new node();
+
+	
+
+	if(negated)
+	{
+		neg_node = new neg_node()
+		neg_node.child = lit;
+		return neg_node;
+	}
+
+
+parse_the_more_important_rest():
+	
