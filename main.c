@@ -1197,7 +1197,7 @@ main(void)
       
       printf
       (
-       "kind '%s' | value: '%.*s' | length: %zu'\n",
+       "kind '%s' | value: '%.*s' | length: %zu\n",
        token_kind_to_str(token->kind),
        (int)token->len, (char*)token->value_ptr, token->len
       );
