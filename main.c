@@ -1175,7 +1175,7 @@ int
 main(void)
 {
    // read the file
-   FILE* compiled_file = fopen("./delight-editor/start_parser", "r");
+   FILE* compiled_file = fopen("./delight-editor/start_lexer", "r");
 
    if(NULL == compiled_file)
    {
@@ -1208,18 +1208,19 @@ main(void)
       
       printf
       (
-       "kind '%s' | value: '%.*s' | length: '%zu'\n",
+       "kind '%s' | value: '%.*s' | length: '%zu' | line: '%zu' | column '%zu'\n",
        token_kind_to_str(token->kind),
-       (int)token->len, (char*)token->value_ptr, token->len
+       (int)token->len, (char*)token->value_ptr, token->len,
+       token->start_line, token->start_column
       );
    }
 
    // (p)arse
-   struct Parser* parser = parser_create(lexer->tokens);
-   parser_parse(parser);
+   // struct Parser* parser = parser_create(lexer->tokens);
+   // parser_parse(parser);
 
-   size_t current_tree_level = 0;
-   node_tree_debug(parser->root_node, current_tree_level);
+   // size_t current_tree_level = 0;
+   // node_tree_debug(parser->root_node, current_tree_level);
 
    // (c)lean(up)
    parser_free(); // NOTE/TODO: implement actual free
