@@ -991,16 +991,13 @@ parser_assert(struct Parser* self, enum TokenKind expected_kind)
       );
       abort();
    }
-
-   parser_advance(self);
 }
 
 bool
 parser_accept(struct Parser* self, enum TokenKind expected_kind)
 {
-   if(self->current_token->kind != expected_kind)
+   if(self->current_token->kind == expected_kind)
    {
-      parser_advance(self);
       return true;
    }
 
@@ -1010,45 +1007,64 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
-   parser_assert(self, IntegerLiteral);
-
-   struct Node* number_node = node_create();
-   number_node->kind        = NodeNumber;
-   number_node->token_ptr   = self->current_token;
-
-   if(parser_accept(self, MinusOperator))
+   if(parser_accept(self, IntegerLiteral))
    {
-      struct Node* bin_node   = node_create();
-      struct Node* expression = parser_parse_expression(self);
+      struct Node* number_node = node_create();
+      number_node->kind        = NodeNumber;
+      number_node->token_ptr   = self->current_token;
 
-      bin_node->kind  = NodeBinary;
-      bin_node->left  = number_node;
-      bin_node->right = expression;
-      return bin_node;
+      // NOTE/TODO: probably should drop reliance on
+      // token_tpr data and encapsulate this into parser_accept.
+      // right now current token data needs to be saved before proceeding
+      parser_advance(self);
+
+      if(parser_accept(self, MinusOperator))
+      {
+         parser_advance(self);
+         struct Node* bin_node   = node_create();
+         struct Node* expression = parser_parse_expression(self);
+
+         bin_node->kind  = NodeBinary;
+         bin_node->left  = number_node;
+         bin_node->right = expression;
+
+         return bin_node;
+      }
+      else if(parser_accept(self, PlusOperator))
+      {
+         parser_advance(self);
+         struct Node* bin_node   = node_create();
+         struct Node* expression = parser_parse_expression(self);
+
+         bin_node->kind  = NodeBinary;
+         bin_node->left  = number_node;
+         bin_node->right = expression;
+
+         return bin_node;
+      }
+
+      return number_node;
    }
-   else if(parser_accept(self, PlusOperator))
-   {
-      struct Node* bin_node   = node_create();
-      struct Node* expression = parser_parse_expression(self);
 
-      bin_node->kind  = NodeBinary;
-      bin_node->left  = number_node;
-      bin_node->right = expression;
-      return bin_node;
-   }
-
-   return number_node;
+   return NULL;
 }
 
 void
 parser_parse_variable_bind(struct Parser* self)
 {
       parser_assert(self, IntegerType);
+      parser_advance(self);
+
       parser_assert(self, Identifier);
+      parser_advance(self);
+
       parser_assert(self, Assignment);
+      parser_advance(self);
 
       struct Node* expression = parser_parse_expression(self);
+
       parser_assert(self, StatementEnd);
+      parser_advance(self);
 }
 
 void
@@ -1064,13 +1080,9 @@ parser_parse(struct Parser* self)
    // initialize first token
    self->token_index = 0;
    self->current_token = vector_get(self->tokens, self->token_index);
-   while(true)
+   while(self->current_token->kind != EndOfTokens)
    {
       parser_parse_variable_bind(self);
-
-      if(self->current_token->kind == EndOfTokens) { break; }
-
-      parser_advance(self);
    }
 }
 
