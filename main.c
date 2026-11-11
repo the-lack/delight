@@ -976,7 +976,12 @@ node_tree_debug(struct Node* node, size_t current_tree_level)
         }
       case NodeVariableBind:
          {
-            printf(" | type: ", token_kind_to_str(node->type));
+            printf
+            (
+            " | name: %.*s | type: %s ",
+            (int)node->token_ptr->len, node->token_ptr->value_ptr,
+            token_kind_to_str(node->type)
+            );
             node_tree_debug(node->value_expr, current_tree_level + 1);
             break;
          }
@@ -1059,6 +1064,12 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    }
 
    return false;
+}
+
+struct Node*
+parser_parse_multiplication_or_division(struct Parser* self)
+{
+
 }
 
 struct Node*
@@ -1197,7 +1208,7 @@ main(void)
       
       printf
       (
-       "kind '%s' | value: '%.*s' | length: %zu\n",
+       "kind '%s' | value: '%.*s' | length: '%zu'\n",
        token_kind_to_str(token->kind),
        (int)token->len, (char*)token->value_ptr, token->len
       );
