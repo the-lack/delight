@@ -1078,8 +1078,10 @@ parser_parse(struct Parser* self)
    self->root_node = root_node;
 
    // initialize first token
+   ASSERT(self->tokens->element_count > 0);
    self->token_index = 0;
    self->current_token = vector_get(self->tokens, self->token_index);
+
    while(self->current_token->kind != EndOfTokens)
    {
       parser_parse_variable_bind(self);
