@@ -897,7 +897,7 @@ lexer_lex(struct Lexer* self)
 #define NODE_TYPES           \
         X(NodeScope)         \
         X(NodeVariableBind)  \
-        X(NodeNumber)        \
+        X(NodeInteger)       \
         X(NodeBinary)
 
 enum NodeKind
@@ -907,16 +907,29 @@ enum NodeKind
    #undef X
 };
 
+char*
+node_kind_to_str(enum NodeKind kind)
+{
+   #define X(name) if(kind == name) { static char* variable = #name; return variable; }
+   NODE_TYPES
+   #undef X
+
+   ASSERT("no execution path leads here" && false);
+}
+
 struct Node
 {
    enum NodeKind kind;
+   struct Token* token_ptr;
 
    // NodeScope
    struct vector* nodes;
    // NodeScope
 
    // NodeVariableBind
-   struct Node* value;
+   struct Node* value_expr;
+      // should have token_ptr;
+   enum TokenKind type;
    // NodeVariableBind
 
    // NodeBinary
@@ -925,9 +938,9 @@ struct Node
    struct Node* right;
    // NodeBinary
 
-   // NodeNumber
-   struct Token* token_ptr;
-   // NodeNumber
+   // NodeInteger
+      // should have token_ptr;
+   // NodeInteger
 };
 
 struct Node*
@@ -938,6 +951,50 @@ node_create()
    ASSERT(node != NULL);
 
    return node;
+}
+
+void
+node_tree_debug(struct Node* node, size_t current_tree_level)
+{
+   printf("\n");
+   for(size_t i = 0; i < current_tree_level; i++)
+   {
+      printf("\t");
+   }
+
+   printf("NodeKind: %s | level %zu", node_kind_to_str(node->kind), current_tree_level);
+   switch(node->kind)
+   {
+     case NodeScope:
+        {
+            for(size_t i = 0; i < node->nodes->element_count; i++)
+            {
+                struct Node* sub_node = vector_get(node->nodes, i);
+                node_tree_debug(sub_node, current_tree_level + 1);
+            }
+            break;
+        }
+      case NodeVariableBind:
+         {
+            printf(" | type: ", token_kind_to_str(node->type));
+            node_tree_debug(node->value_expr, current_tree_level + 1);
+            break;
+         }
+
+      case NodeBinary:
+         {
+            printf(" | op: %s", token_kind_to_str(node->operand));
+            node_tree_debug(node->left, current_tree_level + 1);
+            node_tree_debug(node->right, current_tree_level + 1);
+            break;
+         }
+      case NodeInteger:
+         {
+            printf(" | value: %.*s", (int)node->token_ptr->len, node->token_ptr->value_ptr);
+            break;
+         }         
+
+   }
 }
 
 struct Parser
@@ -1010,7 +1067,7 @@ parser_parse_expression(struct Parser* self)
    if(parser_accept(self, IntegerLiteral))
    {
       struct Node* number_node = node_create();
-      number_node->kind        = NodeNumber;
+      number_node->kind        = NodeInteger;
       number_node->token_ptr   = self->current_token;
 
       // NOTE/TODO: probably should drop reliance on
@@ -1024,9 +1081,10 @@ parser_parse_expression(struct Parser* self)
          struct Node* bin_node   = node_create();
          struct Node* expression = parser_parse_expression(self);
 
-         bin_node->kind  = NodeBinary;
-         bin_node->left  = number_node;
-         bin_node->right = expression;
+         bin_node->kind    = NodeBinary;
+         bin_node->left    = number_node;
+         bin_node->right   = expression;
+         bin_node->operand = MinusOperator;
 
          return bin_node;
       }
@@ -1036,9 +1094,10 @@ parser_parse_expression(struct Parser* self)
          struct Node* bin_node   = node_create();
          struct Node* expression = parser_parse_expression(self);
 
-         bin_node->kind  = NodeBinary;
-         bin_node->left  = number_node;
-         bin_node->right = expression;
+         bin_node->kind    = NodeBinary;
+         bin_node->left    = number_node;
+         bin_node->right   = expression;
+         bin_node->operand = PlusOperator;
 
          return bin_node;
       }
@@ -1049,22 +1108,30 @@ parser_parse_expression(struct Parser* self)
    return NULL;
 }
 
-void
+struct Node*
 parser_parse_variable_bind(struct Parser* self)
 {
+      struct Node* node = node_create();
+      node->kind = NodeVariableBind;
+
       parser_assert(self, IntegerType);
+      node->type = IntegerType;
       parser_advance(self);
 
       parser_assert(self, Identifier);
+      node->token_ptr = self->current_token;
       parser_advance(self);
 
       parser_assert(self, Assignment);
       parser_advance(self);
 
       struct Node* expression = parser_parse_expression(self);
+      node->value_expr = expression;
 
       parser_assert(self, StatementEnd);
       parser_advance(self);
+
+      return node;
 }
 
 void
@@ -1084,7 +1151,11 @@ parser_parse(struct Parser* self)
 
    while(self->current_token->kind != EndOfTokens)
    {
-      parser_parse_variable_bind(self);
+      struct Node* node = parser_parse_variable_bind(self);
+      if(node != NULL)
+      {
+         vector_append(self->root_node->nodes, node);
+      }
    }
 }
 
@@ -1136,6 +1207,10 @@ main(void)
    struct Parser* parser = parser_create(lexer->tokens);
    parser_parse(parser);
 
+   size_t current_tree_level = 0;
+   node_tree_debug(parser->root_node, current_tree_level);
+
+   // (c)lean(up)
    parser_free(); // NOTE/TODO: implement actual free
 
    // NOTE/TODO: parser relies on lexers tokens for certain nodes
