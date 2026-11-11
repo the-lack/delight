@@ -238,6 +238,26 @@ lexer_save_token(struct Lexer* self, struct Token token)
    size_t token_start_line   = self->current_file_line_1indexed;
    size_t token_start_column = self->current_file_column_1indexed - token.len;
 
+   printf(
+    "[SAVE DEBUG] "
+    "current character: %c | "
+    "file line: %zu | "
+    "file column: %zu |"
+    "current_index: %zu | "
+    "start_line: %zu | "
+    "start_column: %zu | "
+    "token: %.*s | \n\n\n",
+    self->current_character,
+    self->current_file_line_1indexed,
+    self->current_file_column_1indexed,
+    self->current_index,
+    token_start_line,
+    token_start_column,
+    (int)token.len,
+    token.value_ptr
+    );
+   
+
    ASSERT(token_start_column >= 1);
    ASSERT(token_start_line   >= 1);
 
@@ -250,6 +270,17 @@ lexer_save_token(struct Lexer* self, struct Token token)
 void
 lexer_advance(struct Lexer* self)
 {
+   printf(
+    "[ADVANCE DEBUG] "
+    "current character: %c | "
+    "file line: %zu | "
+    "file column: %zu |"
+    "current_index: %zu | \n\n\n",
+    self->current_character,
+    self->current_file_line_1indexed,
+    self->current_file_column_1indexed,
+    self->current_index
+ );
    self->current_file_column_1indexed++;
    if(self->current_character == '\n')
    {
