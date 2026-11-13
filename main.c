@@ -1191,7 +1191,7 @@ int
 main(void)
 {
    // read the file
-   FILE* compiled_file = fopen("./delight-editor/start_lexer", "r");
+   FILE* compiled_file = fopen("./delight-editor/start_parser", "r");
 
    if(NULL == compiled_file)
    {
@@ -1232,11 +1232,11 @@ main(void)
    }
 
    // (p)arse
-   // struct Parser* parser = parser_create(lexer->tokens);
-   // parser_parse(parser);
+   struct Parser* parser = parser_create(lexer->tokens);
+   parser_parse(parser);
 
-   // size_t current_tree_level = 0;
-   // node_tree_debug(parser->root_node, current_tree_level);
+   size_t current_tree_level = 0;
+   node_tree_debug(parser->root_node, current_tree_level);
 
    // (c)lean(up)
    parser_free(); // NOTE/TODO: implement actual free
