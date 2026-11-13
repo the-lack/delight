@@ -238,26 +238,6 @@ lexer_save_token(struct Lexer* self, struct Token token)
    size_t token_start_line   = self->current_file_line_1indexed;
    size_t token_start_column = self->current_file_column_1indexed - token.len;
 
-   printf(
-    "[SAVE DEBUG] "
-    "current character: %c | "
-    "file line: %zu | "
-    "file column: %zu |"
-    "current_index: %zu | "
-    "start_line: %zu | "
-    "start_column: %zu | "
-    "token: %.*s | \n\n\n",
-    self->current_character,
-    self->current_file_line_1indexed,
-    self->current_file_column_1indexed,
-    self->current_index,
-    token_start_line,
-    token_start_column,
-    (int)token.len,
-    token.value_ptr
-    );
-   
-
    ASSERT(token_start_column >= 1);
    ASSERT(token_start_line   >= 1);
 
@@ -270,17 +250,6 @@ lexer_save_token(struct Lexer* self, struct Token token)
 void
 lexer_advance(struct Lexer* self)
 {
-   printf(
-    "[ADVANCE DEBUG] "
-    "current character: %c | "
-    "file line: %zu | "
-    "file column: %zu |"
-    "current_index: %zu | \n\n\n",
-    self->current_character,
-    self->current_file_line_1indexed,
-    self->current_file_column_1indexed,
-    self->current_index
- );
    self->current_file_column_1indexed++;
    if(self->current_character == '\n')
    {
@@ -599,8 +568,23 @@ lexer_lex(struct Lexer* self)
            .len       = 1,
            .kind      = StatementEnd,           
          };
-         lexer_save_token(self, identifier_token);
+
+         // NOTE/TODO: in this and every other place
+         // order of 1) advance 2) save is important for
+         // internal lexer_save_token() mechanism of calculating
+         // token column and line in the column
+         //
+         // if the order is reversed to:
+         // 1) save
+         // 2) advance
+         // 
+         // then the start_column of a token will point to a character
+         // right before the first character of the token.
+         //
+         // this is very flaky and highly unexplicit dependency.
+         // the lexer structer will need to be redesigned to avoid this.
          lexer_advance(self);
+         lexer_save_token(self, identifier_token);
          continue;
       }
 
@@ -715,8 +699,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -729,8 +713,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -743,8 +727,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -757,8 +741,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }      
       
@@ -771,8 +755,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -785,8 +769,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }      
 
@@ -799,8 +783,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -813,8 +797,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }
 
@@ -827,8 +811,8 @@ lexer_lex(struct Lexer* self)
             .value_ptr = (char*)self->characters + self->current_index
          };
 
-         lexer_save_token(self, established_token);
          lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
          continue;
       }      
 
@@ -868,9 +852,10 @@ lexer_lex(struct Lexer* self)
                .kind      = AndOperator,
                .len       = 2,
                .value_ptr = value_ptr
-            };            
-            lexer_save_token(self, established_token);
+            };
+            
             lexer_advance(self); // prepare next
+            lexer_save_token(self, established_token);
             continue;
          }
 
