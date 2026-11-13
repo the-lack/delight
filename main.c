@@ -960,7 +960,7 @@ struct Node
 };
 
 struct Node*
-node_create()
+node_create(void)
 {
    // NOTE/TODO: suboptimal, memory arena maybe?
    struct Node* node = malloc(sizeof(struct Node));
