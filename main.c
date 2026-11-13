@@ -46,6 +46,7 @@ do {                                     \
    X(PlusOperator)     \
    X(MinusOperator)    \
    X(MultOperator)     \
+   X(DivOperator)      \
    X(If)               \
    X(Else)             \
    X(ParenOpen)        \
@@ -431,53 +432,6 @@ lexer_number(struct Lexer* self)
 }
 
 struct LexResult
-lexer_comment(struct Lexer* self)
-{
-   char* start_ptr = self->characters + self->current_index;
-   size_t lexeme_length = 1; // single char initially
-   struct Token established_token;
-
-   lexer_advance(self);
-
-   if(self->current_character != '/')
-   {     
-      static char error_message[256];
-      snprintf
-      (
-         error_message, sizeof(error_message),
-         "unexpected character '%c' on line %zu, column %zu following comment start '/'. expected another '/'",
-         self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
-      );
-
-      return
-      (struct LexResult)
-      {
-         .code = DifferentExpected,
-         .error_message = error_message
-      };
-   }
-
-   while(!self->end_of_characters && self->current_character != '\n')
-   {
-      ++lexeme_length;
-      lexer_advance(self);
-   }
-
-   established_token.value_ptr = start_ptr;
-   established_token.len       = lexeme_length;
-   established_token.kind      = Comment;
-
-   lexer_save_token(self, established_token);
-
-   return
-   (struct LexResult)
-   {
-      .code          = AllGood,
-      .error_message = NULL,
-   };
-}
-
-struct LexResult
 lexer_string(struct Lexer* self)
 {
    char* start_ptr = self->characters + self->current_index;
@@ -588,10 +542,27 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
-      if(self->current_character == '/')
+      if(self->current_character == '#')
       {
-         struct LexResult result = lexer_comment(self);
-         if(result.code != AllGood) { return result; }
+         size_t lexeme_length = 1;
+         char* start_ptr = self->characters + self->current_index;
+
+         lexer_advance(self);
+
+         while(!self->end_of_characters && '\n' != self->current_character)
+         {
+            ++lexeme_length;
+            lexer_advance(self);
+         }
+
+         struct Token token =
+         {
+            .kind      = Comment,
+            .len       = lexeme_length,
+            .value_ptr = start_ptr
+         };
+
+         lexer_save_token(self, token);
          continue;
       }
 
@@ -814,7 +785,21 @@ lexer_lex(struct Lexer* self)
          lexer_advance(self); // prepare next
          lexer_save_token(self, established_token);
          continue;
-      }      
+      }
+
+      if(self->current_character == '/')
+      {
+         struct Token established_token =
+         {
+            .kind      = DivOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
+         continue;
+      }
 
       if(self->current_character == '!')
       {
@@ -1083,12 +1068,6 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 }
 
 struct Node*
-parser_parse_multiplication_or_division(struct Parser* self)
-{
-
-}
-
-struct Node*
 parser_parse_expression(struct Parser* self)
 {
    if(parser_accept(self, IntegerLiteral))
@@ -1096,10 +1075,10 @@ parser_parse_expression(struct Parser* self)
       struct Node* number_node = node_create();
       number_node->kind        = NodeInteger;
       number_node->token_ptr   = self->current_token;
+      // ^^^^ NOTE/TODO: probably should drop reliance on
+      // token_ptr data and encapsulate this into parser_accept.
+      // right now current token data needs to be saved before proceeding      
 
-      // NOTE/TODO: probably should drop reliance on
-      // token_tpr data and encapsulate this into parser_accept.
-      // right now current token data needs to be saved before proceeding
       parser_advance(self);
 
       if(parser_accept(self, MinusOperator))
@@ -1128,6 +1107,41 @@ parser_parse_expression(struct Parser* self)
 
          return bin_node;
       }
+      else if(parser_accept(self, MultOperator))
+      {
+         // NOTE/TODO: would be good for parser_advance as well
+         // as lexer_advance to emphasize consumption of the current token.
+         // important function of advance() functions.
+         parser_advance(self);
+
+         struct Node* bin_node   = node_create();
+         struct Node* expression = parser_parse_expression(self);
+
+         bin_node->kind    = NodeBinary;
+         bin_node->left    = number_node;
+         bin_node->right   = expression;
+         bin_node->operand = MultOperator;
+
+         return bin_node;
+      }
+      else if(parser_accept(self, DivOperator))
+      {
+         // NOTE/TODO: would be good for parser_advance as well
+         // as lexer_advance to emphasize consumption of the current token.
+         // important function of advance() functions.
+         parser_advance(self);
+
+         struct Node* bin_node   = node_create();
+         struct Node* expression = parser_parse_expression(self);
+
+         bin_node->kind    = NodeBinary;
+         bin_node->left    = number_node;
+         bin_node->right   = expression;
+         bin_node->operand = DivOperator;
+
+         return bin_node;
+      }      
+      
 
       return number_node;
    }

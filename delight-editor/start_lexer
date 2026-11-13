@@ -1,4 +1,4 @@
-// this file was done for testing the lexer
+# this file was done for testing the lexer
 
 score = 123;
 scoreTwo = score;
@@ -8,7 +8,7 @@ scoreThree = score;
 int anotherscore = 2;
 
 
-// 1. Variable declarations across multiple types with literals
+# 1. Variable declarations across multiple types with literals
 
 
 int score = 100;
@@ -25,7 +25,7 @@ string username = "CompilerTester";
 bool isActive = true;
 
 
-// 2. Arithmetic, type casting, and float/int mixing
+# 2. Arithmetic, type casting, and float/int mixing
 float bonus = 15.25;
 
 bool comparison1 = 5 > 6;
@@ -40,7 +40,7 @@ int addition = 3 + 1;
 int subtraction = 3 - 1;
 
 
-// 3. Conditional execution (if-else) with relational and logical operators
+# 3. Conditional execution (if-else) with relational and logical operators
 if (finalScore > threshold && isActive) {
     print("Status: PASSED\n");
     print(username);
@@ -49,7 +49,7 @@ if (finalScore > threshold && isActive) {
 }
 
 
-// 4. Iteration (while loop) with arithmetic, assignment, and modulo operators
+# 4. Iteration (while loop) with arithmetic, assignment, and modulo operators
 int counter = 0;
 int accumulator = 0;
 
@@ -63,7 +63,7 @@ while (counter < 5) {
 }
 
 
-// 5. Final state check and reporting
+# 5. Final state check and reporting
 if (accumulator != 0) {
     print("Loop execution completed successfully.\n");
 } else {
@@ -77,7 +77,7 @@ if(!accumulator)
 
 
 
-// pause
+# pause
 
 int add(int a, int b) {
 	int c = a + b;
@@ -112,7 +112,7 @@ int sum_to_n(int n) {
     return total;
 }
 
-int total_sum = sum_to_n(5); // Should compute 15
+int total_sum = sum_to_n(5); # Should compute 15
 
 
 int calculate(int a, int b, int c) {
@@ -122,7 +122,7 @@ int calculate(int a, int b, int c) {
 }
 
 
-int math_result = calculate(10, 3, 5); // Should compute 25
+int math_result = calculate(10, 3, 5); # Should compute 25
 
 
 
@@ -134,7 +134,7 @@ int factorial(int n) {
     }
 }
 
-int fact_val = factorial(4); // Should compute 24
+int fact_val = factorial(4); # Should compute 24
 
 float final_score = (float)score + bonus - 5.0;
 

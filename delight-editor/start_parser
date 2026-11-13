@@ -1,4 +1,4 @@
-int score = 123 + 1 - 2;
+int score = 123 * 1 - 2 * 2 / 2;
 
 \\ magic compiler blockade
 
