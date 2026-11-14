@@ -135,4 +135,18 @@ parse_the_rest():
 
 
 parse_the_more_important_rest():
-	
+
+
+
+
+// TEMP(cycle3):
+// TEMP: structure is this
+// TEMP:              +
+// TEMP:            /   \
+// TEMP:           /     \
+// TEMP:          +       * 
+// TEMP:         / \     /  \
+// TEMP:        /  (2) (3)  (2)
+// TEMP:       +      
+// TEMP:     /  \
+// TEMP:  (-2)  1 	

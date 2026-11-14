@@ -1068,6 +1068,11 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
+bool
+parser_lookahead(struct Parser* self, size_t by)
+{
+}
+
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
@@ -1094,12 +1099,19 @@ parser_parse_expression(struct Parser* self)
    // STEP 3
    // while(true) loop and sub-steps
    //
-   // STEP 3.1
-   // if current_character is "-" or "+" or "*":
-   // a) save it to NODE_VAR while preserving previous node_var as left-side argument
-   // like:  NODE = new Node(left=NODE, right=NULL, op="-" or "+" or "*")
-   // b) advance to next character
-   // c) continue the loop
+   // STEP 3.1 IN PROGRESS
+   // if current_character is "-" or "+":
+   // 
+   // a) check further if: lookahead(by=2) != "*"
+   //    1) then save current token to NODE_VAR while preserving previous node_var as left-side argument
+   //    like:  NODE = new Node(left=NODE, right=NULL, op="-" or "+")
+   //    2) advance to next character
+   //    3) continue the loop
+   // 
+   // b) else if it's "*"
+   //    
+   // 
+   // 
    // 
    // TEMP(cycle1):
    // TEMP: structure is this
