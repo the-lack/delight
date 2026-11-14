@@ -1,6 +1,39 @@
 int score = 123 * 1 - 2 * 2 / 2;
 
+int score = 123 * 1 * 2 / 2 * 2;
+
 \\ magic compiler blockade
+
+int score = 123 * 1 + 2 + 2 - 2;
+
+# main example
+123 * 1 - 2 * 2 / 2;
+
+(123 * 1) - ((2 * 2) / 2);
+
+123 * 1 * 2 / 3;
+
+
+     (*)
+    /   \
+(123)    (*)
+        /
+      (1)
+
+
+2 * 2 / 2
+
+     *
+   /   \
+ 123    1
+
+
+        -     
+      /   \
+     *     
+   /   \
+ 123    1
+
 
 scoreTwo = score;
 scoreThree = score;

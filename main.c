@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h> 
 #include <threads.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 #define ASSERT(condition)                \
@@ -1026,7 +1027,7 @@ parser_create(struct vector* tokens)
 
 // NOTE/TODO: implement actual freeing
 void
-parser_free()
+parser_free(void)
 {
    return;
 }
@@ -1070,81 +1071,216 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
-   if(parser_accept(self, IntegerLiteral))
-   {
-      struct Node* number_node = node_create();
-      number_node->kind        = NodeInteger;
-      number_node->token_ptr   = self->current_token;
-      // ^^^^ NOTE/TODO: probably should drop reliance on
-      // token_ptr data and encapsulate this into parser_accept.
-      // right now current token data needs to be saved before proceeding      
+   // struct Node* start_node = node_create();
 
+   // if(parser_accept(self, MinusOperator))
+   // {
+   //    start_node->kind      = NodeBinary;
+   //    start_node->operand   = MinusOperator;
+   //    start_node->token_ptr = self->current_token;
+   //    parser_advance(self);
+   // }
+   // else if(parser_accept(self, PlusOperator))
+   // {
+   //    start_node->kind      = NodeBinary;
+   //    start_node->operand   = PlusOperator;
+   //    start_node->token_ptr = self->current_token;
+   //    parser_advance(self);
+   // }
+   // else if(parser_accept(self, IntegerLiteral))
+   // {
+   //    start_node->kind      = NodeInteger;
+   //    start_node->token_ptr = self->current_token;
+   //    parser_advance(self);
+   // }
+   // else
+   // {
+   //    // NOTE/TODO: definitely should be encapsulated somewhere.
+   //    // also the inherent design of parser_assert, parser_advance
+   //    // and error handling is somewhat flawed.
+   //    //
+   //    // the code both here as well as in the parser could be much
+   //    // more compressed, less repetetive and have cleaner flow control.
+   //    fprintf
+   //    (
+   //      stderr,
+   //      "[PARSE ERROR] expected '%s' or '%s' or '%s'"
+   //      "received '%s' at line %zu, column %zu\n",
+   //      token_kind_to_str(MinusOperator), token_kind_to_str(IntegerLiteral), token_kind_to_str(PlusOperator),
+   //      token_kind_to_str(self->current_token->kind), self->current_token->start_line, self->current_token->start_column
+   //    );
+   //    abort();      
+   // }
+
+   // pseudocode
+
+
+   // was_negated
+   // was_plusated
+
+   // if(current character is - | +) 
+   // {
+   //    set plusated / negated flag
+   // }
+   struct Node* start_node = NULL;
+   struct Node* prev_node  = NULL;
+
+   while(parser_accept(self, IntegerLiteral))
+   {  
+      struct Node* sub_node = node_create();
+      
+      parser_assert(self, IntegerLiteral);
+      struct Node* int_node = node_create();
+      int_node->kind        = NodeInteger;
+      int_node->token_ptr   = self->current_token;
       parser_advance(self);
 
-      if(parser_accept(self, MinusOperator))
+      if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
       {
+         sub_node->kind      = NodeBinary;
+         sub_node->operand   = self->current_token->kind;
+         sub_node->token_ptr = self->current_token;
+         sub_node->left      = int_node;
+
+         if(start_node == NULL && prev_node == NULL)
+         {
+            start_node = sub_node;
+         }
+         else
+         {
+            prev_node->right = sub_node;
+         }
+         prev_node = sub_node;
+
          parser_advance(self);
-         struct Node* bin_node   = node_create();
-         struct Node* expression = parser_parse_expression(self);
-
-         bin_node->kind    = NodeBinary;
-         bin_node->left    = number_node;
-         bin_node->right   = expression;
-         bin_node->operand = MinusOperator;
-
-         return bin_node;
+         continue;
       }
-      else if(parser_accept(self, PlusOperator))
+      else if(parser_accept(self, DivOperator) || parser_accept(self, MultOperator))
       {
-         parser_advance(self);
-         struct Node* bin_node   = node_create();
-         struct Node* expression = parser_parse_expression(self);
-
-         bin_node->kind    = NodeBinary;
-         bin_node->left    = number_node;
-         bin_node->right   = expression;
-         bin_node->operand = PlusOperator;
-
-         return bin_node;
-      }
-      else if(parser_accept(self, MultOperator))
-      {
-         // NOTE/TODO: would be good for parser_advance as well
-         // as lexer_advance to emphasize consumption of the current token.
-         // important function of advance() functions.
+         sub_node->kind      = NodeBinary;
+         sub_node->operand   = self->current_token->kind;
+         sub_node->token_ptr = self->current_token;
          parser_advance(self);
 
-         struct Node* bin_node   = node_create();
-         struct Node* expression = parser_parse_expression(self);
-
-         bin_node->kind    = NodeBinary;
-         bin_node->left    = number_node;
-         bin_node->right   = expression;
-         bin_node->operand = MultOperator;
-
-         return bin_node;
-      }
-      else if(parser_accept(self, DivOperator))
-      {
-         // NOTE/TODO: would be good for parser_advance as well
-         // as lexer_advance to emphasize consumption of the current token.
-         // important function of advance() functions.
+         parser_assert(self, IntegerLiteral);
+         struct Node* int_node2 = node_create();
+         int_node2->kind        = NodeInteger;
+         int_node2->token_ptr   = self->current_token;
          parser_advance(self);
 
-         struct Node* bin_node   = node_create();
-         struct Node* expression = parser_parse_expression(self);
+         sub_node->left      = int_node;
+         sub_node->right     = int_node2;
+         
+         if(start_node == NULL && prev_node == NULL)
+         {
+            start_node = sub_node;
+         }
+         else
+         {
+            prev_node->right = sub_node;
+         }
 
-         bin_node->kind    = NodeBinary;
-         bin_node->left    = number_node;
-         bin_node->right   = expression;
-         bin_node->operand = DivOperator;
+         prev_node = sub_node;
 
-         return bin_node;
+         parser_advance(self);
+         continue;
       }      
+      else
+      {
+         prev_node->right = int_node;
+         // prev_node        = sub_node; not needed, should be a last loop execution
+      }
+      
+      // break;
+   }
+
+   return start_node;
+
+   
+   
+   // if()
+
+   // start_node()
+
+   // if(parser_accept)
+
+   // else 
+
+   // if(parser_accept(self, IntegerLiteral))
+   // {
+   //    struct Node* number_node = node_create();
+   //    number_node->kind        = NodeInteger;
+   //    number_node->token_ptr   = self->current_token;
+   //    // ^^^^ NOTE/TODO: probably should drop reliance on
+   //    // token_ptr data and encapsulate this into parser_accept.
+   //    // right now current token data needs to be saved before proceeding      
+
+   //    parser_advance(self);
+
+   //    if(parser_accept(self, MinusOperator))
+   //    {
+   //       parser_advance(self);
+   //       struct Node* bin_node   = node_create();
+   //       struct Node* expression = parser_parse_expression(self);
+
+   //       bin_node->kind    = NodeBinary;
+   //       bin_node->left    = number_node;
+   //       bin_node->right   = expression;
+   //       bin_node->operand = MinusOperator;
+
+   //       return bin_node;
+   //    }
+   //    else if(parser_accept(self, PlusOperator))
+   //    {
+   //       parser_advance(self);
+   //       struct Node* bin_node   = node_create();
+   //       struct Node* expression = parser_parse_expression(self);
+
+   //       bin_node->kind    = NodeBinary;
+   //       bin_node->left    = number_node;
+   //       bin_node->right   = expression;
+   //       bin_node->operand = PlusOperator;
+
+   //       return bin_node;
+   //    }
+   //    else if(parser_accept(self, MultOperator))
+   //    {
+   //       // NOTE/TODO: would be good for parser_advance as well
+   //       // as lexer_advance to emphasize consumption of the current token.
+   //       // important function of advance() functions.
+   //       parser_advance(self);
+
+   //       struct Node* bin_node   = node_create();
+   //       struct Node* expression = parser_parse_expression(self);
+
+   //       bin_node->kind    = NodeBinary;
+   //       bin_node->left    = number_node;
+   //       bin_node->right   = expression;
+   //       bin_node->operand = MultOperator;
+
+   //       return bin_node;
+   //    }
+   //    else if(parser_accept(self, DivOperator))
+   //    {
+   //       // NOTE/TODO: would be good for parser_advance as well
+   //       // as lexer_advance to emphasize consumption of the current token.
+   //       // important function of advance() functions.
+   //       parser_advance(self);
+
+   //       struct Node* bin_node   = node_create();
+   //       struct Node* expression = parser_parse_expression(self);
+
+   //       bin_node->kind    = NodeBinary;
+   //       bin_node->left    = number_node;
+   //       bin_node->right   = expression;
+   //       bin_node->operand = DivOperator;
+
+   //       return bin_node;
+   //    }      
       
 
-      return number_node;
-   }
+   //    return number_node;
+   // }
 
    return NULL;
 }
