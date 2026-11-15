@@ -1069,6 +1069,14 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
+
+// NOTE: add support for:
+// - parenthesized expressions (2 + 2)
+// - negative integers         2 + (-2)
+// - powers                    2^2
+// - identifiers               int a = 2; int b = a + 2;
+// - floats
+// - float and integer compatibility (maybe?)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
@@ -1091,7 +1099,10 @@ parser_parse_expression(struct Parser* self)
 
    struct Node* ROOT_NODE = first_int_node;
 
-   while(parser_accept(self, MinusOperator) || parser_accept(self,PlusOperator) || parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
+   while(parser_accept(self, MinusOperator)  ||
+         parser_accept(self, PlusOperator)   ||
+         parser_accept(self, MultOperator)   ||
+         parser_accept(self, DivOperator))
    {
 
       if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
