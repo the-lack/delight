@@ -942,6 +942,7 @@ struct Node
 
    // NodeInteger
       // should have token_ptr;
+      bool negated;
    // NodeInteger
 };
 
@@ -1076,119 +1077,73 @@ parser_lookahead(struct Parser* self, size_t by)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
+   bool negated_flag = false;
 
-   // example input:
-   // -2 + 1 + 2 + 3 * 2 * 2 * 3 / 1 / 2 / 3 + (2 + 2) * (2 + 2) / (2 + 2) - (-3)
-   //
-   // cases
-   // A - cycle1) -2 + 1
-   // B - cycle2) -2 + 1 + 2
-   // C - cycle3) -2 + 1 + 2 + 3 * 2
-   // 
-   // STEP 1
-   // get integer sigedness prefix (+ or -).
-   // save it to SIGEDNESS_FLAG
-   // if missing: continue
+   if(parser_accept(self, MinusOperator))
+   {
+      negated_flag = true;
+      parser_advance(self);
+   }
 
-   // STEP 2
-   // get integer literal, save it to NODE variable, with SIGEDNESS_FLAG
-   // if missing: error
-   //
-   // TEMP: NODE is (-2) here
+   parser_assert(self, IntegerLiteral);
+   struct Node* first_int_node = node_create();
+   first_int_node->kind      = NodeInteger;
+   first_int_node->token_ptr = self->current_token;
+   first_int_node->negated   = negated_flag;
+   negated_flag = false; // reset the flag
+   parser_advance(self);
 
-   // STEP 3
-   // EXPRESSION_TOKENS = ["+", "-", "*", "/"]
-   // while(current_token in EXPRESSION_TOKENS) loop and sub-steps
-   //
-   // STEP 3.1 IN PROGRESS
-   // if current_character is "-" or "+":
-   // 
-   // a) check further if: lookahead(by=2) != "*"
-   //    1) then save current token to NODE_VAR while preserving previous node_var as left-side argument
-   //    like:  NODE = new Node(left=NODE, right=NULL, op="-" or "+")
-   //    2) advance to next character
-   //    3) continue the loop
-   // 
-   // b) else if it's "*"
-   //    
-   // 
-   // 
-   // 
-   // TEMP(cycle1):
-   // TEMP: structure is this
-   // TEMP:          +
-   // TEMP:        /   \
-   // TEMP:     (-2)   NULL
-   // 
-   // TEMP(cycle2):
-   // TEMP: structure is this
-   // TEMP:
-   // TEMP:           +
-   // TEMP:         /  \
-   // TEMP:        /  NULL
-   // TEMP:       +      
-   // TEMP:     /  \
-   // TEMP:  (-2)  1
-   // 
-   // TEMP(cycle3):
-   // TEMP: structure is this
-   // TEMP:               +
-   // TEMP:             /   \
-   // TEMP:           /     NULL
-   // TEMP:           +
-   // TEMP:         /  \
-   // TEMP:        /   (2)
-   // TEMP:       +      
-   // TEMP:     /  \
-   // TEMP:  (-2)  1
-   //
-   // STEP 3.2
-   // if current character is an IntegerLiteral:
-   // a) create NEW_NODE variable initialize with current token data
-   // b) save it to the right side of the NODE_VAR like: NODE_VAR.right = NEW_NODE
-   // c) advance to next character
-   // d) continue the loop
-   // 
-   // TEMP(cycle1):
-   // TEMP: structure is this
-   // TEMP:          +
-   // TEMP:        /   \
-   // TEMP:     (-2)   2
-   //
-   //
-   // TEMP(cycle2):
-   // TEMP: structure is this
-   // TEMP:
-   // TEMP:           +
-   // TEMP:         /  \
-   // TEMP:        /   (2)
-   // TEMP:       +      
-   // TEMP:     /  \
-   // TEMP:  (-2)  1
-   //
-   //
-   // TEMP(cycle3):
-   // TEMP: structure is this
-   // TEMP:               +
-   // TEMP:             /   \
-   // TEMP:           /     3
-   // TEMP:          +
-   // TEMP:         / \
-   // TEMP:        /  (2)
-   // TEMP:       +      
-   // TEMP:     /  \
-   // TEMP:  (-2)  1 
-   // 
-   // STEP 3.3
-   // if control flow led here this means the current token
-   // is not integer nor operation.
-   // a) check if current NODE variable has both left and right value.
-   //    if it doesn't then the parsing stopped at operation without
-   //    a value following - throw an error
-   //
-   //    if it does then just return - no more expression tokens to parse
-   
-   return NULL;
+
+   struct Node* ROOT_NODE = first_int_node;
+
+   while(parser_accept(self, MinusOperator) || parser_accept(self,PlusOperator) || parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
+   {
+
+      if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
+      {
+         struct Node* op_node = node_create();
+         op_node->kind        = NodeBinary;
+         op_node->token_ptr   = self->current_token;
+         op_node->operand     = self->current_token->kind;
+         op_node->left        = ROOT_NODE;
+         parser_advance(self);
+
+         parser_assert(self, IntegerLiteral);
+         struct Node* int_node = node_create();
+         int_node->kind        = NodeInteger;
+         int_node->token_ptr   = self->current_token;
+         parser_advance(self);
+
+         struct Node* HIGHER_PREC_ROOT = int_node;
+
+         while(parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
+         {
+            struct Node* higher_prec_op_node = node_create();
+
+            higher_prec_op_node->kind  = NodeBinary;
+            higher_prec_op_node->left  = HIGHER_PREC_ROOT;
+            higher_prec_op_node->right = NULL;
+            higher_prec_op_node->operand  = self->current_token->kind;
+            parser_advance(self);
+
+            parser_assert(self, IntegerLiteral);
+            struct Node* int_node2    = node_create();
+            int_node2->kind      = NodeInteger;
+            int_node2->token_ptr = self->current_token;
+            parser_advance(self);
+
+     				higher_prec_op_node->right = int_node2;
+     				HIGHER_PREC_ROOT = higher_prec_op_node;
+         }
+
+         op_node->right = HIGHER_PREC_ROOT;
+         ROOT_NODE = op_node;
+      }
+
+      
+   }
+
+   return ROOT_NODE;
 }
 
 struct Node*

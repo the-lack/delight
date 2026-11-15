@@ -180,30 +180,41 @@ parse_expression():
 
 	NODE = FIRST_INT_NODE;
 
-	while(current_token in [+, -]):		
-		op_node = new op_node(op=current_token->operand, left=NODE, right=NULL)
-		advance()
-
-		if(current_token not Integer):
-			ERROR
-
-		int_node2 = new integer_node();
-		advance()
-		
-		HIGHER_PREC_ROOT = int_node2;
-		while(current_token in ["/", "*"]):
-			higher_prec_op_node = new op_node(op=current_token->operand, left=HIGH_PREC_ROOT, right=NULL)
-			advance()			
-			
-			int_node3 = new integer_node();
+	while(current_token in [+, -, *, /]):
+		if token in [+, -]
+			op_node = new op_node(op=current_token->operand, left=NODE, right=NULL)
 			advance()
 
-			higher_prec_op_node.right = int_node3;
+			if(current_token not Integer):
+				ERROR
 
-			HIGHER_PREC_ROOT = higher_prec_op_node
+			int_node2 = new integer_node();
+			advance()
+		
+			HIGHER_PREC_ROOT = int_node2;
+			while(current_token in ["/", "*"]):
+				higher_prec_op_node = new op_node(op=current_token->operand, left=HIGH_PREC_ROOT, right=NULL)
+				advance()			
+			
+				int_node3 = new integer_node();
+				advance()
 
-		op_node.right = HIGHER_PREC_ROOT;
-		NODE = op_node			
+				higher_prec_op_node.right = int_node3;
 
+				HIGHER_PREC_ROOT = higher_prec_op_node
+
+			op_node.right = HIGHER_PREC_ROOT;
+			NODE = op_node
+		else if token in [*, /]
+			op_node = new op_node(op=current_token->operand, left=NODE, right=NULL)
+			advance()
+
+			if(current_token not Integer):
+				ERROR
+			int_node2 = new integer_node();
+			advance()
+
+			op_node.right = int_node2;
+			NODE = op_node
 
 
