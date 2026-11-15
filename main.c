@@ -1139,8 +1139,24 @@ parser_parse_expression(struct Parser* self)
          op_node->right = HIGHER_PREC_ROOT;
          ROOT_NODE = op_node;
       }
+      else if(parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
+      {
+         struct Node* op_node = node_create();
+         op_node->kind        = NodeBinary;
+         op_node->token_ptr   = self->current_token;
+         op_node->operand     = self->current_token->kind;
+         op_node->left        = ROOT_NODE;
+         parser_advance(self);
 
-      
+         parser_assert(self, IntegerLiteral);
+         struct Node* int_node = node_create();
+         int_node->kind        = NodeInteger;
+         int_node->token_ptr   = self->current_token;
+         parser_advance(self);
+
+         op_node->right = int_node;
+         ROOT_NODE = op_node;
+      }
    }
 
    return ROOT_NODE;
