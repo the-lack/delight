@@ -1,11 +1,11 @@
 # --- c++ config
 COMPILER              = gcc
 FLAG_VERSION          = -std=c99
-FLAG_WARNINGS         = -Wall -Wextra -Wunused-variable -Wpedantic -Wshadow -Wunused -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wformat-security
-FLAG_MAX_OPTIMIZATION = -O3
-LLVM_FLAGS            = llvm-config --ldflags --system-libs --libs core support
-FLAG_OUTPUT_ASM       = -S -masm=intel -fverbose-asm
-FLAG_SAVE_INTERMEDIATE_COMPILER_REPRESENTATIONS = -save-temps
+# FLAG_WARNINGS         = -Wall -Wextra -Wunused-variable -Wpedantic -Wshadow -Wunused -Wconversion -Wsign-conversion -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wformat-security
+# FLAG_MAX_OPTIMIZATION = -O3
+# LLVM_FLAGS            = llvm-config --ldflags --system-libs --libs core support
+# FLAG_OUTPUT_ASM       = -S -masm=intel -fverbose-asm
+# FLAG_SAVE_INTERMEDIATE_COMPILER_REPRESENTATIONS = -save-temps
 
 # --- build output config
 BUILD_DIRECTORY_NAME = build_output
