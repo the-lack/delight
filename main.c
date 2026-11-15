@@ -1069,11 +1069,6 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
-bool
-parser_lookahead(struct Parser* self, size_t by)
-{
-}
-
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
