@@ -1097,7 +1097,8 @@ parser_parse_expression(struct Parser* self)
    // TEMP: NODE is (-2) here
 
    // STEP 3
-   // while(true) loop and sub-steps
+   // EXPRESSION_TOKENS = ["+", "-", "*", "/"]
+   // while(current_token in EXPRESSION_TOKENS) loop and sub-steps
    //
    // STEP 3.1 IN PROGRESS
    // if current_character is "-" or "+":

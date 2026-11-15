@@ -149,4 +149,61 @@ parse_the_more_important_rest():
 // TEMP:        /  (2) (3)  (2)
 // TEMP:       +      
 // TEMP:     /  \
-// TEMP:  (-2)  1 	
+// TEMP:  (-2)  1
+
+-2 + 2 + 2 * 2 * 5 + 2
+
+EATABLE: -2 + 2 + 2 * 2 * 5 + 2 / 2
+
+2 * 2 * 2 * 2
+
+     *
+    /  \
+    *  (2)
+  /  \
+(2)  (2)
+
+
+parse_expression():
+
+	negated_flag = false;
+	if(current_token == "-"):
+		negated_flag = true
+		advance()
+
+	if(current_token != integer):
+		ERROR
+
+	FIRST_INT_NODE = new integer_node(negated=negated_flag);
+	negated_flag = false; // reset
+	advance()
+
+	NODE = FIRST_INT_NODE;
+
+	while(current_token in [+, -]):		
+		op_node = new op_node(op=current_token->operand, left=NODE, right=NULL)
+		advance()
+
+		if(current_token not Integer):
+			ERROR
+
+		int_node2 = new integer_node();
+		advance()
+		
+		HIGHER_PREC_ROOT = int_node2;
+		while(current_token in ["/", "*"]):
+			higher_prec_op_node = new op_node(op=current_token->operand, left=HIGH_PREC_ROOT, right=NULL)
+			advance()			
+			
+			int_node3 = new integer_node();
+			advance()
+
+			higher_prec_op_node.right = int_node3;
+
+			HIGHER_PREC_ROOT = higher_prec_op_node
+
+		op_node.right = HIGHER_PREC_ROOT;
+		NODE = op_node			
+
+
+
