@@ -210,7 +210,7 @@ lexer_create(char* characters, size_t character_count)
 {
    struct Lexer* lexer          = malloc(sizeof(struct Lexer));
    struct vector* tokens_vector = vector_create(sizeof(struct Token));
-   ASSERT(lexer != NULL );
+   ASSERT(lexer != NULL);
 
    lexer->characters        = characters;
    lexer->tokens            = tokens_vector;
