@@ -1054,6 +1054,9 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 // - identifiers               int a = 2; int b = a + 2;
 // - floats
 // - float and integer compatibility (maybe?)
+// - comparisons > X, < X, <= X, >= X, == X, != X
+// - boolean expressions X && Y, X || Y
+// - modulo %
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
