@@ -324,7 +324,7 @@ lexer_identifier_or_keyword(struct Lexer* self)
 
    enum TokenKind kw = str_to_keyword(start_ptr, lexeme_length);
 
-   if(-1 != kw)
+   if(-1 != (int)kw)
    {
       established_token.value_ptr = start_ptr;
       established_token.len       = lexeme_length;
@@ -1045,7 +1045,6 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 
    return false;
 }
-
 
 // NOTE: add support for:
 // - parenthesized expressions (2 + 2)
