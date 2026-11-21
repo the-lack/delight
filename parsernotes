@@ -350,6 +350,34 @@ ref3 = { OP: *, left: ref2, right: 1       }
 ref4 = { OP: *, left: ref3, right: ref5    }
 ref5 = { OP: ^, left: 7   , right:         }
 
+[+, *, +] right: null
+
+[+, *, +] right: null
+
+[*, +, *] right: null
+
+2 + 2 * 2 * 2 + 2
+
+2 * 2 + 2 + 2 * 2 + 2
+
+X = 1
+Y = 2
+Z = 3
+A = 4
+
+(1 X 1 X) (1 Y 1 Y 1 Y (1 Z 1 Z 1)) (X 1 X 1)
+
+1 X 1 X 1 Y 1 Y 1 Y 1 Z 1 Z 1 X 1 X 1
+
+1 + 1 + (1 / 1 * 1) * (1 ^ 1 ^ 1) + 1 + 1
+
+right = null
+    		  right = null
+							right = null
+											right = null
+[X                Y              Z                  X]
+
+right=null, < higherprec
 
 while(curr == digit):
 	int_node = initialize_int_node()
@@ -376,7 +404,6 @@ while(curr == digit):
 				op_node = initialize_op_node(left = int_node, op = OP, right = null);
 				STACK.last().right = op_node()
 				STACK.push(op_node);
-				2^2^2
 
 			consume_current_and_advance()
 
@@ -386,5 +413,3 @@ while(curr == digit):
 			consume_current_and_advance()
 
 		assert false, "no one gets here"
-			
-		
