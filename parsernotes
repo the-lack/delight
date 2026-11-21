@@ -217,4 +217,174 @@ parse_expression():
 			op_node.right = int_node2;
 			NODE = op_node
 
+//
 
+-2+2+2*2+2
+ |
+
+-(2)+2+2*2+2
+ | 
+
+STATE:
+ROOT_NODE = NULL
+NEGATED = false
+
+NODEs = [digit, plus, digit]
+
+PREV_OP_PRECEDENCE = 0
+
+1. pull negative/positive sign (optional) -> NEGATED = true
+
+term section section? constructs nodes as long as lookahead doesn't encounter higher precedence? and after getting that fragment it constructs the whole thing?
+
+while(true):
+	1. pull digit (must have)
+	   a) save to node
+	   b) if NEGATED then negated = True on Node and reset NEGATED
+
+	2. followup:
+	   a) pull operator
+	   b) save to node
+	   c) CUR_PREC = get_operand_precedence(operand)
+	   d) if CUR_PREC > PREV_OP_PRECEDENCE
+
+		- pull digit (required)
+		- lookahead for higher prec operator (required)
+
+
+Current implementation of the parser is poor.
+I am trying to avoid typical recursion based ways of implementating recursive (grammar) descent parser.
+
+
+
+
+parse sign
+-> (parse digit -> parse sign -> parse digit)
+-> (does next sign has higher precedence)
+
+
+ORIG 1 + 1 * 2 ^ (1 + 2) + 1
+
++ 1
+(1) (+) | (1) (*) | (2) (^) | ((1) + (2)) 
+
+      (+)
+     /   \
+   (+)   (1)
+  /   \
+(1)  (*) 
+    /   \
+  (1)   (^)
+		/  \
+      (2)  (+)
+          /   \
+	    (1)   (2)
+
+the system is something like:
+
+- keep parsing the same way and doing LEFT=previous thing OP = current thing RIGHT = next thing
+where "THING" is digit.
+with an exception where you checkout with a lookahead RIGHT + 1 nad if it's precedence is bigger than OP then parse the right thing like:
+LEFT = the previous digit that was supposed to belong to the right side of previous oeprator, OP = current thing
+RIGHT = thing on the right (here the recursion comes cuz the next thing might have a higher predecence leve, and the next thing too), the precende nesting can go infinitely deep and should be tracked with DEPTH variable maybe (?).
+at the same time the depth is escaped on interacting with an operator of the same or lower importance as the one before entry/or just lower than current, so:
+
+
+3 level depth (+, *, ^) 1 + 1 * 2 ^ 2
+3 level depth too: (+, +, *, *, ^, ^) 1 + 1 + 1 * 2 * 2 ^ 2 ^ 2
+
+1 level depth: (*, *, *, *, *, *) 1 * 1 * 1 * 2 * 2 * 2 * 2
+1 level depth too: (+, +, +, +, +, +) 1 + 1 + 1 + 2 + 2 + 2 + 2
+
+where are the entry and escape points tho?
+
+
+		5 + 5 + 5 * 5 * 5 + 5 + 5
+depth	1 1 1 1 2 2 2 2 2 1 1 1 1
+                ^         ^
+			  entry       exit
+
+or:
+
+		5 + 5 + 5 * 5 * 5 + 5 + 5
+depth	1 1 1 1 2 2 2 2 2 1 1 1 1
+              ^           ^
+		    entry       exit
+
+to avoid some stupidity with the loop the lookahead probably should happen before consuming the digit itself that has undefined belonging yet.
+
+belonging should be defined before consuming the digit, kinda like
+parse_term()
+parse_expr()
+
+operators = 
+[
++  : 
+-  : 
+*  : 
+/  : 
+%  : 
+!  : // this is not binary i guess
+^  : 
+>  : 
+<  : 
+>= : 
+<= : 
+!= : 
+== :
+&& :
+|| :
+() :
+]
+
+2 * 2 + 3 * 4 * 1 * 7 ^ 2 ^ 2 - 1 * 2 * 3 * 4
+                        |   
+
+(2 + 2 + 2) + 2 * 2 ^ 2
+
+STACK = [{ OP: +, left: ref1, right: null }, ref4, ref5]
+
+ref1 = { OP: *, left: 2   , right: 2       }
+ref2 = { OP: *, left: 3   , right: 4       }
+ref3 = { OP: *, left: ref2, right: 1       }
+ref4 = { OP: *, left: ref3, right: ref5    }
+ref5 = { OP: ^, left: 7   , right:         }
+
+
+while(curr == digit):
+	int_node = initialize_int_node()
+	consume_current_and_advance()
+
+	if curr in operators and curr is binop:
+		OP = get_operator()
+
+		if STACK.length > 0 and STACK.last().precedence < OP.precedence:
+			op_node = initialize_op_node(left = int_node, op = OP, right = null);
+			STACK.last().right = op_node;
+			STACK.push(op_node);
+			consume_current_and_advance()
+		else if STACK.length > 0 and STACK.last().precedence > OP.precedence:
+			...
+		else if STACK.length > 0 or STACK.last().precedence == OP.precedence:
+
+			if STACK.last().associativity is left_associativity: // meaning operand binds to operator on the left
+				STACK.last().right = int_node()
+				op_node = initialize_op_node(left = STACK.pop(), op = OP, right = null);
+				STACK.push(op_node);
+
+			else if STACK.last().associativity is right_associativity: // meaning operand binds to operator on the right
+				op_node = initialize_op_node(left = int_node, op = OP, right = null);
+				STACK.last().right = op_node()
+				STACK.push(op_node);
+				2^2^2
+
+			consume_current_and_advance()
+
+		else if STACK.length == 0:
+			op_node = initialize_op_node(left = int_node, op = OP, right = null);
+			STACK.push(op_node);
+			consume_current_and_advance()
+
+		assert false, "no one gets here"
+			
+		
