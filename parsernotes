@@ -414,14 +414,22 @@ while(curr == digit):
 			STACK.last().right = int_node()
 
 			# folding mechanism
-			for element, next_element in reversed(stack):
-				if next_element is NULL:
+			for last_element, pre_last_element in STACK:
+				if last_element.prec == OP.precedence:
+					break // this means basically that we are still in the same precedence level, lookup checkpoint1
+
+				if last_element.prec <= pre_last_element:
 					break;
-				next_element.right = element
-				pop(element)
-				
+
+				if pre_last_element.prec < OP.precedence
+					break;
+			
+				pre_last_element.right = last_element
+				pop(last_element)
+
 			op_node = initialize_op_node(left = STACK.pop(), op = OP, right = null);
 			STACK.push(op_node);
+			consume_current_and_advance()
 
 		else if STACK.length > 0 and STACK.last().precedence == OP.precedence:
 
