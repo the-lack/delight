@@ -481,7 +481,7 @@ THIS IS PRETTY STRAIGHTFORWARD, WE CAN JUST KEEP CREATING A RIGHT LEANING TREE, 
        4   ^
           ...
 
-ALTHOUGH WE ARE KIND OF GOING DOWN THE TREE, NOT UP, THIS MEANS THAT WE KINDA NEED A STORAGE OF SOME SORT.
+ALTHOUGH WE ARE KIND OF GOING DOWN THE TREE, NOT UP, THIS MEANS THAT WE KINDA NEED A STORAGE OF SOME SORT (no easy access to the child node of the previous node, and child node of that node etc.)
 WE NEED TO CREATE AN INITIAL NODE n1, then create new n2, attach n2 to n1.right, then do the same thing for the n2.right, n3.right, n3.right.
 After doing all this at some point we gotta come up back to the top of the tree (where 1 is located), because we won't keep going deeper anymore. This is an inherent property of right recursion, at some point we gotta stop.
 
@@ -493,6 +493,39 @@ There might be some resemblance between |SAME PREC, RIGHT ASSOCIATIVITY| and |LO
 3) increasing precedence level:
 1 + 2 - 3 * 4 / 5 ^ 6 ^ (7 ^ 8) ^ 9
 
+STEP1
+     -
+  +     \    
+1   2    *
+       /   \
+	  3     4
+
+STEP2
+     -
+  +     \    
+1   2   (/)
+       /    \
+      *      5
+    /   \
+   3     4	
+
+STEP3
+     -
+  +     \    
+1   2   (/)
+       /    \
+      *       ^
+    /   \   /   \
+   3     4 5	 ^
+               6   ^
+                 ^   9
+			   7   8
+
+With increasing precedence levels the tree is expanded kind of top-down. It's not as easy as with same-level predenence where each new node can just do NODE(left=previous_node, operator=..., right=...). The tree isn't built up ^.
+
+What happens is that the tree is expanded down. In this case it's initially expanded up (because of + and following -), then to resolve the new, higher precedence level (division) the division goes to the right side of the subtraction. There it's further expanded into multiplication (*) and exponentiation also with grouping. 
+
+			
 4) decreasing precedence level:
 (1 ^ 2) ^ 3 * 4 / 5 - 6 + 7 - 8 + 9
 
