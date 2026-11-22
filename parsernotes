@@ -582,13 +582,148 @@ STEP 3
 		  5   ^
 		    7   8			
 			
-If the precedence level of a set of operators is the same then the tree will take the previous node (root node) and
-use it as a left child.
+
+This is somewhat complicated. We start from a baseline precedence level of N.
+Whenever we encounter higher precedence level e.g. N+1 we inspect it, go thru it and put it in place of the right child of the lower precedence parent.
+
+The higher precedence something has, the lower it is in the tree.
+
+
+--- General thoughts
+
+There has to be a way of going thru the equation one by one, save first operand and it's precedence, then if we go lower there needs to be a way to go infinitely recursively lower and then come back.
+
+There also must be a way of handling a new operator with lower precedence N-1.
 
 
 
 
 
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                               |
+
+i'd like parsing to happen in linear time.
+
+base case of same precedence is simple. what should happen if a new operator appears with higher precedence.
+
+1 + 2 + 3 * 4 / 2 ^ 3 * 5 * 6 - 5 - 6 - 7
+
+1 + 2 + (3 * 4 / (2 ^ 3) * 5 * 6) - 5 - 6 - 7
+
+Letters represent depth levelS
+
+          -- CHECKPOINT1
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+
+STACK:
+[
+  B: (+, A, NULL)
+  D: (/, C, NULL)
+  E: (^, 2, 3)      
+  F: (*, NULL , NULL) // here we are escaping from higher precedence level to above, if previous precedence was higher then we gotta compare previous with previous-1, if there's a diff there too then we merge it, we keep doing it as long as previous previous.prec > previous-1.prec
+]
+
+          -- CHECKPOINT2
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+E: (^, 2, 3)
+
+STACK:
+[
+  B: (+, A, NULL)
+  D: (/, C, E)
+  F: (*, NULL , NULL)
+    //  after folding we gotta check if current precedence is same as previous (after removing ^ we compare / with *) and if so we use previous as left-side
+]
+
+          -- CHECKPOINT3
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+E: (^, 2, 3)
+D: (/, C, E)
+
+STACK:
+[
+  B: (+, A, NULL)
+  F: (*, D, NULL)
+]
+
+          -- CHECKPOINT4
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+E: (^, 2, 3)
+D: (/, C, E)
+
+STACK:
+[
+  B: (+, A, NULL)
+  F: (*, D, 5)
+]
+
+          -- CHECKPOINT5
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+E: (^, 2, 3)
+D: (/, C, E)
+F: (*, D, 5)
+  G: (*, F, 6)
+
+STACK:
+[
+  B: (+, A, G)
+  H: (-, ,) // here we escaped, we see that we have lower precedence, therefore we apply the same step as in checkpoint no 1 -> fold previous into previous-1
+]
+
+
+          -- CHECKPOINT6
+MEMORY:
+A: (+, 1, 2)
+C: (*, 3, 4)
+E: (^, 2, 3)
+D: (/, C, E)
+F: (*, D, 5)
+G: (*, F, 6)
+B: (+, A, G)
+
+STACK:
+[
+  H: (-, B, 5)  // gotta fold into previous one
+]
 
 
 
+
+
+S1 parse |1 + 2 +|
+
+this is kind of what will ALWAYS happen when you go from N precedence to N+1 precedence (right side will be null)
+
+ROOT_NODE
+    +
+  +   NULL
+1   2
+
+
+S2 parse |3 *|
+
+new precedence means a completely new context that can go infinitely deep and spawn new contexts with new precedence
+
+STACK[(*, 3, NULL)]
+  *
+3   NULL
+
+
+S3 parse | 4 / |
+
+STACK[(*, 3, 4), (/, 2, NULL) ]
+  *
+3   4
+
+     /
+NULL   NULL
