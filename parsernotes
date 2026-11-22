@@ -447,3 +447,65 @@ while(curr == digit):
 
 
 		assert false, "no one gets here"
+
+
+I want to parse math expressions and others too.
+Different operators have different precedence levels and different associativity.
+
+There are different kinds of scenarios that can happen:
+
+1) same precedence level (left associative):
+1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9
+1 * 2 * 3 * 4 * 5 * 6 * 7 * 8 * 9
+1 / 2 / 3 / 4 / 5 / 6 / 7 / 8 / 9
+
+THIS IS PRETTY STRAIGHTFORWARD, WE CAN JUST KEEP CREATING A LEFT LEANING TREE, WE DON'T EVEN NEED A CALL STACK, JUST THE PREVIOUS NODE, LIKE THIS:
+
+        +
+      /   \ 
+     +     4
+   /   \
+  +     3
+1   2
+
+2) same precedence level (right associative):
+1 ^ 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ 8 ^ 9
+
+THIS IS PRETTY STRAIGHTFORWARD, WE CAN JUST KEEP CREATING A RIGHT LEANING TREE, WE DON'T EVEN NEED A CALL STACK, JUST THE PREVIOUS NODE AND ATTACH NEW NODE TO THE RIGHT SIDE OF THE PREVIOUS NODE, LIKE THIS:
+   
+  ^
+1   \
+     ^
+   2   ^ 
+     3   ^
+       4   ^
+          ...
+
+ALTHOUGH WE ARE KIND OF GOING DOWN THE TREE, NOT UP, THIS MEANS THAT WE KINDA NEED A STORAGE OF SOME SORT.
+WE NEED TO CREATE AN INITIAL NODE n1, then create new n2, attach n2 to n1.right, then do the same thing for the n2.right, n3.right, n3.right.
+After doing all this at some point we gotta come up back to the top of the tree (where 1 is located), because we won't keep going deeper anymore. This is an inherent property of right recursion, at some point we gotta stop.
+
+We do this when we encounter different precedence level (lower) than ours. We need to come back to the mountain top. And continue from there, the child nodes won't matter at all anymore at that point and the tree itself is simply finished.
+
+There might be some resemblance between |SAME PREC, RIGHT ASSOCIATIVITY| and |LOWER->HIGHER PREC, BOTH LEFT ASSOCIATIVITY|
+
+	
+3) increasing precedence level:
+1 + 2 - 3 * 4 / 5 ^ 6 ^ (7 ^ 8) ^ 9
+
+4) decreasing precedence level:
+(1 ^ 2) ^ 3 * 4 / 5 - 6 + 7 - 8 + 9
+
+5) variable precedence level:
+1 + 2 + 3 * 5 ^ 7 ^ 8 - 14 - 1 * (2 - 4) * 2
+
+If the precedence level of a set of operators is the same then the tree will take the previous node (root node) and
+use it as a left child.
+
+
+
+
+
+
+
+
