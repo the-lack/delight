@@ -769,3 +769,37 @@ OPERANDS  = [NODE_INT(1), NODE_INT(2), NODE_OP(*, 3, 4), NODE_INT(5)]
 OPERATORS = [NODE_OP(+), NODE_OP(+), NODE_OP(+), NODE_OP(+)]
 
 
+
+if previous_prec < current_prec:
+	new node(left=previous_node, op=OP, right=null)
+
+
+if previous_prec > current_prec:
+
+----
+
+if current_prec < next_prec:
+
+2 + 2 * 3 ^ 2
+  |
+
+3 * 3 / 2
+
+   (/)
+     (2)
+ (*)
+3   3
+
+a1: N(3, ^, 2)
+a2: (2, *, a1)
+
+QUEUE =
+[
+N(2, +, NULL)
+N(a2, *, 5)
+
+]
+
+2 + 2 * 3 ^ 2 * 5 + 6
+                  |
+
