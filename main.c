@@ -129,6 +129,14 @@ vector_get(struct vector* self, size_t index)
    return ((char*)self->data_ptr) + (self->element_size * index);
 }
 
+void*
+vector_pop(struct vector* self)
+{
+   ASSERT (index < self->element_count);
+   // return ((char*)self->data_ptr) + (self->element_size * index);
+}
+
+
 void
 vector_free(struct vector* self)
 {
@@ -1046,6 +1054,13 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
+struct Node*
+parser_parse_expression(struct Parser* self)
+{
+   
+}
+
+
 // NOTE: add support for:
 // - parenthesized expressions (2 + 2)
 // - negative integers         2 + (-2)
@@ -1193,6 +1208,7 @@ parser_parse(struct Parser* self)
       struct Node* node = parser_parse_variable_bind(self);
       if(node != NULL)
       {
+         # problems
          vector_append(self->root_node->nodes, node);
       }
    }
