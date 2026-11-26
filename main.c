@@ -132,8 +132,8 @@ vector_get(struct vector* self, size_t index)
 void*
 vector_pop(struct vector* self)
 {
-   ASSERT (index < self->element_count);
-   // return ((char*)self->data_ptr) + (self->element_size * index);
+   ASSERT(self->element_count > 0);
+   --self->element_count;
 }
 
 
@@ -885,6 +885,7 @@ lexer_lex(struct Lexer* self)
         X(NodeScope)         \
         X(NodeVariableBind)  \
         X(NodeInteger)       \
+        X(NodeInfix)         \
         X(NodeBinary)
 
 enum NodeKind
@@ -904,91 +905,56 @@ node_kind_to_str(enum NodeKind kind)
    ASSERT("no execution path leads here" && false);
 }
 
-struct Node
+struct Node;
+
+struct NodeScope
+{
+   enum NodeKind  kind;
+   struct Token*  token_ptr;
+   struct vector* nodes;
+};
+
+struct NodeVariableBind
+{
+   enum NodeKind kind;
+   struct Token* value_expr_ptr;
+   struct Token* type_expr_ptr;
+};
+
+struct NodeBinary
 {
    enum NodeKind kind;
    struct Token* token_ptr;
-
-   // NodeScope
-   struct vector* nodes;
-   // NodeScope
-
-   // NodeVariableBind
-   struct Node* value_expr;
-      // should have token_ptr;
-   enum TokenKind type;
-   // NodeVariableBind
-
-   // NodeBinary
-   enum TokenKind operand;
-   struct Node* left;
-   struct Node* right;
-   // NodeBinary
-
-   // NodeInteger
-      // should have token_ptr;
-      bool negated;
-   // NodeInteger
+   struct Node*  left;
+   struct Node*  right;
 };
 
-struct Node*
-node_create(void)
+struct NodeInfix
 {
-   // NOTE/TODO: suboptimal, memory arena maybe?
-   struct Node* node = malloc(sizeof(struct Node));
-   ASSERT(node != NULL);
+   enum NodeKind kind;
+   struct Token* token_ptr;
+   struct Node*  child;
+};
 
-   return node;
-}
-
-void
-node_tree_debug(struct Node* node, size_t current_tree_level)
+struct NodeInteger
 {
-   printf("\n");
-   for(size_t i = 0; i < current_tree_level; i++)
-   {
-      printf("\t");
-   }
+   enum NodeKind kind;
+   struct Token* token_ptr;
+};
 
-   printf("NodeKind: %s | level %zu", node_kind_to_str(node->kind), current_tree_level);
-   switch(node->kind)
-   {
-     case NodeScope:
-        {
-            for(size_t i = 0; i < node->nodes->element_count; i++)
-            {
-                struct Node* sub_node = vector_get(node->nodes, i);
-                node_tree_debug(sub_node, current_tree_level + 1);
-            }
-            break;
-        }
-      case NodeVariableBind:
-         {
-            printf
-            (
-            " | name: %.*s | type: %s ",
-            (int)node->token_ptr->len, node->token_ptr->value_ptr,
-            token_kind_to_str(node->type)
-            );
-            node_tree_debug(node->value_expr, current_tree_level + 1);
-            break;
-         }
+struct Node
+{
+   enum NodeKind kind;
 
-      case NodeBinary:
-         {
-            printf(" | op: %s", token_kind_to_str(node->operand));
-            node_tree_debug(node->left, current_tree_level + 1);
-            node_tree_debug(node->right, current_tree_level + 1);
-            break;
-         }
-      case NodeInteger:
-         {
-            printf(" | value: %.*s", (int)node->token_ptr->len, node->token_ptr->value_ptr);
-            break;
-         }         
+   union {
+      struct NodeScope        *node_scope;
+      struct NodeVariableBind *node_variable_bind;
+      struct NodeBinary       *node_binary;
+      struct NodeInfix        *node_infix;
+      struct NodeInteger      *node_integer;
+   };
+};
 
-   }
-}
 
 struct Parser
 {
@@ -997,7 +963,6 @@ struct Parser
    size_t         token_index;
    struct Node*   root_node; // NodeScope
 };
-
 
 struct Parser*
 parser_create(struct vector* tokens)
@@ -1043,6 +1008,24 @@ parser_assert(struct Parser* self, enum TokenKind expected_kind)
    }
 }
 
+void
+parser_assert_one_of(struct Parser* self, enum TokenKind expected_kind)
+{
+   if(self->current_token->kind != expected_kind)
+   {
+      fprintf
+      (
+        stderr,
+        "[PARSE ERROR] expected '%s', received '%s' at line %zu, column %zu\n",
+        token_kind_to_str(expected_kind), token_kind_to_str(self->current_token->kind),
+        self->current_token->start_line, self->current_token->start_column
+      );
+      abort();
+   }
+}
+
+
+
 bool
 parser_accept(struct Parser* self, enum TokenKind expected_kind)
 {
@@ -1054,12 +1037,14 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
-struct Node*
-parser_parse_expression(struct Parser* self)
+char
+parser_get_operator_precedence(struct Parser* self, TokenKind operator)
 {
-   
+   switch(operator)
+   {
+      
+   }
 }
-
 
 // NOTE: add support for:
 // - parenthesized expressions (2 + 2)
@@ -1074,92 +1059,6 @@ parser_parse_expression(struct Parser* self)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
-   bool negated_flag = false;
-
-   if(parser_accept(self, MinusOperator))
-   {
-      negated_flag = true;
-      parser_advance(self);
-   }
-
-   parser_assert(self, IntegerLiteral);
-   struct Node* first_int_node = node_create();
-   first_int_node->kind      = NodeInteger;
-   first_int_node->token_ptr = self->current_token;
-   first_int_node->negated   = negated_flag;
-   negated_flag = false; // reset the flag
-   parser_advance(self);
-
-
-   struct Node* ROOT_NODE = first_int_node;
-
-   while(parser_accept(self, MinusOperator)  ||
-         parser_accept(self, PlusOperator)   ||
-         parser_accept(self, MultOperator)   ||
-         parser_accept(self, DivOperator))
-   {
-
-      if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
-      {
-         struct Node* op_node = node_create();
-         op_node->kind        = NodeBinary;
-         op_node->token_ptr   = self->current_token;
-         op_node->operand     = self->current_token->kind;
-         op_node->left        = ROOT_NODE;
-         parser_advance(self);
-
-         parser_assert(self, IntegerLiteral);
-         struct Node* int_node = node_create();
-         int_node->kind        = NodeInteger;
-         int_node->token_ptr   = self->current_token;
-         parser_advance(self);
-
-         struct Node* HIGHER_PREC_ROOT = int_node;
-
-         while(parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
-         {
-            struct Node* higher_prec_op_node = node_create();
-
-            higher_prec_op_node->kind  = NodeBinary;
-            higher_prec_op_node->left  = HIGHER_PREC_ROOT;
-            higher_prec_op_node->right = NULL;
-            higher_prec_op_node->operand  = self->current_token->kind;
-            parser_advance(self);
-
-            parser_assert(self, IntegerLiteral);
-            struct Node* int_node2    = node_create();
-            int_node2->kind      = NodeInteger;
-            int_node2->token_ptr = self->current_token;
-            parser_advance(self);
-
-     				higher_prec_op_node->right = int_node2;
-     				HIGHER_PREC_ROOT = higher_prec_op_node;
-         }
-
-         op_node->right = HIGHER_PREC_ROOT;
-         ROOT_NODE = op_node;
-      }
-      else if(parser_accept(self, MultOperator) || parser_accept(self, DivOperator))
-      {
-         struct Node* op_node = node_create();
-         op_node->kind        = NodeBinary;
-         op_node->token_ptr   = self->current_token;
-         op_node->operand     = self->current_token->kind;
-         op_node->left        = ROOT_NODE;
-         parser_advance(self);
-
-         parser_assert(self, IntegerLiteral);
-         struct Node* int_node = node_create();
-         int_node->kind        = NodeInteger;
-         int_node->token_ptr   = self->current_token;
-         parser_advance(self);
-
-         op_node->right = int_node;
-         ROOT_NODE = op_node;
-      }
-   }
-
-   return ROOT_NODE;
 }
 
 struct Node*
@@ -1193,10 +1092,10 @@ parser_parse(struct Parser* self)
 {
    // root_node init
    struct Node*    root_node = node_create();
-   struct vector*  nodes     = vector_create(sizeof(struct Node));
-   root_node->kind   = NodeScope;
-   root_node->nodes  = nodes;
-   self->root_node = root_node;
+   struct vector*  nodes     = vector_create(sizeof(struct Node*));
+   root_node->kind           = NodeScope;
+   root_node->nodes          = nodes;
+   self->root_node           = root_node;
 
    // initialize first token
    ASSERT(self->tokens->element_count > 0);
@@ -1208,7 +1107,7 @@ parser_parse(struct Parser* self)
       struct Node* node = parser_parse_variable_bind(self);
       if(node != NULL)
       {
-         # problems
+         // problems
          vector_append(self->root_node->nodes, node);
       }
    }
@@ -1262,9 +1161,6 @@ main(void)
    // (p)arse
    struct Parser* parser = parser_create(lexer->tokens);
    parser_parse(parser);
-
-   size_t current_tree_level = 0;
-   node_tree_debug(parser->root_node, current_tree_level);
 
    // (c)lean(up)
    parser_free(); // NOTE/TODO: implement actual free

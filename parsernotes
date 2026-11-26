@@ -797,9 +797,90 @@ QUEUE =
 [
 N(2, +, NULL)
 N(a2, *, 5)
-N(, +, 6)
+N(, +, 6) <- lacks folding ability
 ]
 
 2 + 2 * 3 ^ 2 * 5 + 6
                     |
+
+
+node = null
+
+
+2 + 2 * 3 ^ 2 * 5 + 6
+|
+
+ROOT = None
+
+PROCESSED_TOKENS = []
+
+for token in tokens:
+	if last(PROCESSED_TOKENS) not IntegerLiteral:
+		assert token.kind is IntegerLiteral
+		node = Node(kind=token.kind, token_ref=token)
+		if ROOT is None:
+			ROOT = node
+		continue
+
+	last_token = last(PROCESSED_TOKENS)
+
+	assert last_token is IntegerLiteral:
+	assert token.kind in [+, -, *, /, ^]
+
+	RO
+
+What would the fastest and simplest precedence -> tree algorithm have?
+
+It would have to be O(n) at least.
+Unless one finds some smart mechanism that allows ignoring some characters (maybe it could be O(n - 2) if you'd ignore characters that are last somehow but -2 is constant so still O(n)).
+
+Axiom 1: THE EXPRESSION THAT HAS THE HIGHEST PRECEDENCE HAS TO BE TURNED INTO A TREE.
+there's no way around that probably. this expression cannot be jumped to immediately because then there would need to be a jump to lower precedence which might be earlier index-wise (unless the tokenizer marks indexes of expression boundaries which is first and last and then marks the highest precedence operator indexes upfront for any given boundary range)
+
+
+
+
+operators = 
+[
++  : { prec: ..., associativity: left | right }
+-  : 
+*  : 
+/  : 
+%  : 
+!  : // this is not binary i guess
+^  : 
+>  : 
+<  : 
+>= : 
+<= : 
+!= : 
+== :
+&& :
+|| :
+]
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
