@@ -59,6 +59,7 @@ do {                                     \
    X(MinusOperator,  NULL) \
    X(MultOperator,   NULL) \
    X(DivOperator,    NULL) \
+   X(ExpOperator,    NULL) \
    X(If,             NULL) \
    X(Else,           NULL) \
    X(ParenOpen,      NULL) \
@@ -72,6 +73,25 @@ do {                                     \
    X(StatementEnd,   NULL) \
    KEYWORDS
 
+
+// OPERATOR, PRECEDENCE, ASSOCIATIVITY, TOKEN         
+#define OPERATORS                                           \
+   X(OperatorOr,          3,  NONE,  OrOperator)            \
+   X(OperatorAnd,         5,  NONE,  AndOperator)           \
+   X(OperatorPlus,        10, LEFT,  PlusOperator)          \
+   X(OperatorMinus,       10, LEFT,  MinusOperator)         \
+   X(OperatorMult,        20, LEFT,  MultOperator)          \
+   X(OperatorDiv,         20, LEFT,  DivOperator)           \
+   X(OperatorMod,         20, LEFT,  ModOperator)           \
+   X(OperatorExp,         30, RIGHT, ExpOperator)           \
+   X(OperatorUnequal,     32, LEFT,  Inequal)               \
+   X(OperatorEqual,       32, LEFT,  Equal)                 \
+   X(OperatorMoreThan,    35, LEFT,  MoreThan)              \
+   X(OperatorLessThan,    35, LEFT,  LessThan)              \
+   X(OperatorMoreOrEqual, 35, LEFT,  MoreOrEqual)           \
+   X(OperatorLessOrEqual, 35, LEFT,  LessOrEqual)           \
+   X(OperatorNeg,         40, NONE,  NegationOperator) 	
+   
 /* part vector */
 struct vector
 {
@@ -675,6 +695,20 @@ lexer_lex(struct Lexer* self)
          continue;
       }
 
+      if(self->current_character == '-')
+      {
+         struct Token established_token =
+         {
+            .kind      = ExpOperator,
+            .len       = 1,
+            .value_ptr = (char*)self->characters + self->current_index
+         };
+
+         lexer_advance(self); // prepare next
+         lexer_save_token(self, established_token);
+         continue;
+      }      
+
       if(self->current_character == '*')
       {
          struct Token established_token =
@@ -910,15 +944,15 @@ struct Node;
 struct NodeScope
 {
    enum NodeKind  kind;
-   struct Token*  token_ptr;
-   struct vector* nodes;
+   struct vector* nodes_ptr;
 };
 
 struct NodeVariableBind
 {
    enum NodeKind kind;
-   struct Token* value_expr_ptr;
-   struct Token* type_expr_ptr;
+   struct Token* identifier_ptr;
+   struct Token* type_ptr;
+   struct Node* value_expr_ptr;
 };
 
 struct NodeBinary
@@ -947,21 +981,28 @@ struct Node
    enum NodeKind kind;
 
    union {
-      struct NodeScope        *node_scope;
-      struct NodeVariableBind *node_variable_bind;
-      struct NodeBinary       *node_binary;
-      struct NodeInfix        *node_infix;
-      struct NodeInteger      *node_integer;
-   };
+      struct NodeScope        node_scope;
+      struct NodeVariableBind node_variable_bind;
+      struct NodeBinary       node_binary;
+      struct NodeInfix        node_infix;
+      struct NodeInteger      node_integer;
+   } data;
 };
 
+struct Node*
+node_create(void)
+{
+   struct Node* node_ptr = malloc(sizeof(struct Node));
+   ASSERT(node_ptr != NULL);
+   return node_ptr;
+}
 
 struct Parser
 {
    struct vector* tokens;
    struct Token*  current_token;
    size_t         token_index;
-   struct Node*   root_node; // NodeScope
+   struct Node*   root_node_ptr;
 };
 
 struct Parser*
@@ -1037,15 +1078,6 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
    return false;
 }
 
-char
-parser_get_operator_precedence(struct Parser* self, TokenKind operator)
-{
-   switch(operator)
-   {
-      
-   }
-}
-
 // NOTE: add support for:
 // - parenthesized expressions (2 + 2)
 // - negative integers         2 + (-2)
@@ -1059,6 +1091,9 @@ parser_get_operator_precedence(struct Parser* self, TokenKind operator)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
+
+   // for()
+   return NULL;
 }
 
 struct Node*
@@ -1068,18 +1103,18 @@ parser_parse_variable_bind(struct Parser* self)
       node->kind = NodeVariableBind;
 
       parser_assert(self, IntegerKeyword);
-      node->type = IntegerKeyword;
+      node->data.node_variable_bind.type_ptr = self->current_token;
       parser_advance(self);
 
       parser_assert(self, Identifier);
-      node->token_ptr = self->current_token;
+      node->data.node_variable_bind.identifier_ptr = self->current_token;
       parser_advance(self);
 
       parser_assert(self, Assignment);
       parser_advance(self);
 
       struct Node* expression = parser_parse_expression(self);
-      node->value_expr = expression;
+      node->data.node_variable_bind.value_expr_ptr = expression;
 
       parser_assert(self, StatementEnd);
       parser_advance(self);
@@ -1091,15 +1126,14 @@ void
 parser_parse(struct Parser* self)
 {
    // root_node init
-   struct Node*    root_node = node_create();
-   struct vector*  nodes     = vector_create(sizeof(struct Node*));
-   root_node->kind           = NodeScope;
-   root_node->nodes          = nodes;
-   self->root_node           = root_node;
+   struct Node*    root_node_ptr                = node_create();
+   root_node_ptr->kind                          = NodeScope;
+   root_node_ptr->data.node_scope.nodes_ptr     = vector_create(sizeof(struct Node*));;
+   self->root_node_ptr                          = root_node_ptr;
 
    // initialize first token
    ASSERT(self->tokens->element_count > 0);
-   self->token_index = 0;
+   self->token_index   = 0;
    self->current_token = vector_get(self->tokens, self->token_index);
 
    while(self->current_token->kind != EndOfTokens)
@@ -1107,8 +1141,8 @@ parser_parse(struct Parser* self)
       struct Node* node = parser_parse_variable_bind(self);
       if(node != NULL)
       {
-         // problems
-         vector_append(self->root_node->nodes, node);
+         void* ptr_to_node_ptr = &node;
+         vector_append(self->root_node_ptr->data.node_scope.nodes_ptr, ptr_to_node_ptr);
       }
    }
 }
