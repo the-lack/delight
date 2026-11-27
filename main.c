@@ -71,26 +71,7 @@ do {                                     \
    X(ModOperator,    NULL) \
    X(EndOfTokens,    NULL) \
    X(StatementEnd,   NULL) \
-   KEYWORDS
-
-
-// OPERATOR, PRECEDENCE, ASSOCIATIVITY, TOKEN         
-#define OPERATORS                                           \
-   X(OperatorOr,          3,  NONE,  OrOperator)            \
-   X(OperatorAnd,         5,  NONE,  AndOperator)           \
-   X(OperatorPlus,        10, LEFT,  PlusOperator)          \
-   X(OperatorMinus,       10, LEFT,  MinusOperator)         \
-   X(OperatorMult,        20, LEFT,  MultOperator)          \
-   X(OperatorDiv,         20, LEFT,  DivOperator)           \
-   X(OperatorMod,         20, LEFT,  ModOperator)           \
-   X(OperatorExp,         30, RIGHT, ExpOperator)           \
-   X(OperatorUnequal,     32, LEFT,  Inequal)               \
-   X(OperatorEqual,       32, LEFT,  Equal)                 \
-   X(OperatorMoreThan,    35, LEFT,  MoreThan)              \
-   X(OperatorLessThan,    35, LEFT,  LessThan)              \
-   X(OperatorMoreOrEqual, 35, LEFT,  MoreOrEqual)           \
-   X(OperatorLessOrEqual, 35, LEFT,  LessOrEqual)           \
-   X(OperatorNeg,         40, NONE,  NegationOperator) 	
+   KEYWORDS	
    
 /* part vector */
 struct vector
@@ -928,6 +909,62 @@ enum NodeKind
    NODE_TYPES
    #undef X
 };
+
+// OPERATOR, PRECEDENCE, ASSOCIATIVITY, TOKEN         
+#define OPERATORS                                           \
+   X(OperatorOr,          3,  NONE,  OrOperator)            \
+   X(OperatorAnd,         5,  NONE,  AndOperator)           \
+   X(OperatorPlus,        10, LEFT,  PlusOperator)          \
+   X(OperatorMinus,       10, LEFT,  MinusOperator)         \
+   X(OperatorMult,        20, LEFT,  MultOperator)          \
+   X(OperatorDiv,         20, LEFT,  DivOperator)           \
+   X(OperatorMod,         20, LEFT,  ModOperator)           \
+   X(OperatorExp,         30, RIGHT, ExpOperator)           \
+   X(OperatorUnequal,     32, LEFT,  Inequal)               \
+   X(OperatorEqual,       32, LEFT,  Equal)                 \
+   X(OperatorMoreThan,    35, LEFT,  MoreThan)              \
+   X(OperatorLessThan,    35, LEFT,  LessThan)              \
+   X(OperatorMoreOrEqual, 35, LEFT,  MoreOrEqual)           \
+   X(OperatorLessOrEqual, 35, LEFT,  LessOrEqual)           
+/*    X(OperatorNeg,         40, NONE,  NegationOperator) - infix operator*/
+
+
+enum OperatorKind
+{
+   #define X(operator_type, precedence, associativity, token) operator_type,
+   OPERATORS
+   #undef X
+};
+
+enum Associativity
+{
+   LEFT,
+   RIGHT
+};
+   
+
+struct Operator
+{
+   enum OperatorKind operator;
+   enum Associativity associativity;
+   size_t precedence;
+};
+   
+
+struct Operator token_to_operator(enum TokenKind token_kind)
+{
+   #define X(operator_type, precedence, associativity, token) \
+   if(token_kind == token) {                                  \
+      return (struct Operator)                                \
+      {                                                       \
+       .operator = operator_type,                             \
+       .precedence = precedence,                              \
+       .associativity = associativity                         \
+      }                                                       \
+   }                                                          
+   OPERATORS
+   #undef X
+}
 
 char*
 node_kind_to_str(enum NodeKind kind)
