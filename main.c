@@ -989,7 +989,8 @@ struct Operator
 };
    
 
-struct Operator token_to_operator(enum TokenKind token_kind)
+struct Operator
+token_to_operator(enum TokenKind token_kind)
 {
    #define X(operator_type, precedence_level, operator_associativity, token)  \
    if(token_kind == token)                                                    \
@@ -1006,6 +1007,14 @@ struct Operator token_to_operator(enum TokenKind token_kind)
 
    ASSERT("no execution path leads here" && false);
 }
+
+static enum TokenKind operator_tokens[] = {
+#define X(operator_type, precedence_level, operator_associativity, token) \
+token,
+   OPERATORS
+#undef X
+};
+
 
 char*
 node_kind_to_str(enum NodeKind kind)
@@ -1124,19 +1133,36 @@ parser_assert(struct Parser* self, enum TokenKind expected_kind)
 }
 
 void
-parser_assert_one_of(struct Parser* self, enum TokenKind expected_kind)
+parser_assert_one_of(struct Parser* self, enum TokenKind *expected_kinds, size_t count)
 {
-   if(self->current_token->kind != expected_kind)
+   bool found = false;
+   for(size_t i = 0; i < count; i++)
    {
+      enum TokenKind expected_kind = expected_kinds[i];
+      if(expected_kind == self->current_token->kind)
+      {
+         found = true;
+      }
+   }
+
+   if(!found)
+   {
+      fprintf(stderr, "[PARSE ERROR] expected one of: ");
+
+      for(size_t i = 0; i < count; i++)
+      {
+         enum TokenKind expected_kind = expected_kinds[i];
+         fprintf(stderr, "%s, ", token_kind_to_str(expected_kind));
+      }
+
       fprintf
       (
-        stderr,
-        "[PARSE ERROR] expected '%s', received '%s' at line %zu, column %zu\n",
-        token_kind_to_str(expected_kind), token_kind_to_str(self->current_token->kind),
-        self->current_token->start_line, self->current_token->start_column
+        stderr, "but received '%s' at line %zu, column %zu\n",
+         token_kind_to_str(self->current_token->kind), self->current_token->start_line, self->current_token->start_column
       );
+
       abort();
-   }
+   }   
 }
 
 bool
@@ -1167,41 +1193,13 @@ parser_parse_expression(struct Parser* self)
    {
       struct Node* expr_node = NULL;
 
-      if(i == 0)
-      {
-         if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
-         {
-            expr_node            = node_create();
-            expr_node->kind      = NodeUnary;
-            expr_node->data.node_unary.token_ptr = self->current_token;
-            parser_advance(self);
+      parser_assert(self, IntegerLiteral);
+      expr_node = node_create();
+      expr_node->kind = NodeInteger;
+      expr_node->data.node_integer.token_ptr = self->current_token;
+      parser_advance(self);
 
-            parser_assert(self, IntegerLiteral);
-            struct Node* int_node = node_create();
-            int_node->kind = NodeInteger;
-            int_node->data.node_integer.token_ptr = self->current_token;
-            parser_advance(self);
-
-            expr_node->data.node_unary.child = int_node;
-         }
-         else
-         {
-
-            parser_assert(self, IntegerLiteral);
-            expr_node = node_create();
-            expr_node->kind = NodeInteger;
-            expr_node->data.node_integer.token_ptr = self->current_token;
-            parser_advance(self);            
-         }
-      }
-      else
-      {
-         parser_assert(self, IntegerLiteral);
-         expr_node = node_create();
-         expr_node->kind = NodeInteger;
-         expr_node->data.node_integer.token_ptr = self->current_token;
-         parser_advance(self);
-      }
+      parser_assert_one_of(self, operator_tokens, sizeof(operator_tokens)/sizeof(operator_tokens[0]));
 
       return expr_node;
    }
