@@ -71,6 +71,7 @@ do {                                     \
    X(ModOperator,    NULL) \
    X(EndOfTokens,    NULL) \
    X(StatementEnd,   NULL) \
+   X(OrOperator,     NULL) \
    KEYWORDS	
    
 /* part vector */
@@ -130,7 +131,7 @@ vector_get(struct vector* self, size_t index)
    return ((char*)self->data_ptr) + (self->element_size * index);
 }
 
-void*
+void
 vector_pop(struct vector* self)
 {
    ASSERT(self->element_count > 0);
@@ -859,7 +860,43 @@ lexer_lex(struct Lexer* self)
          .code          = DifferentExpected,
          .error_message = error_message
          };
-      }      
+      }
+
+      if('|' == self->current_character)
+      {
+         char* value_ptr = (char*)self->characters + self->current_index;
+         lexer_advance(self);
+
+         if('|' == self->current_character)
+         {
+            struct Token established_token =
+            {
+               .kind      = OrOperator,
+               .len       = 2,
+               .value_ptr = value_ptr
+            };
+            
+            lexer_advance(self); // prepare next
+            lexer_save_token(self, established_token);
+            continue;
+         }
+
+         static char error_message[256];
+         snprintf
+         (
+            error_message, sizeof(error_message),
+            "unexpected character '%c' encountered on line %zu, column %zu. '|' should be followed by another '|' to create an AND statement",
+            self->current_character, self->current_file_line_1indexed, self->current_file_column_1indexed
+         );
+
+         return
+         (struct LexResult)
+         {
+         .code          = DifferentExpected,
+         .error_message = error_message
+         };
+      }
+      
       
       static char error_message[256];
       snprintf
@@ -912,8 +949,8 @@ enum NodeKind
 
 // OPERATOR, PRECEDENCE, ASSOCIATIVITY, TOKEN         
 #define OPERATORS                                           \
-   X(OperatorOr,          3,  NONE,  OrOperator)            \
-   X(OperatorAnd,         5,  NONE,  AndOperator)           \
+   X(OperatorOr,           3, NONE,  OrOperator)            \
+   X(OperatorAnd,          5, NONE,  AndOperator)           \
    X(OperatorPlus,        10, LEFT,  PlusOperator)          \
    X(OperatorMinus,       10, LEFT,  MinusOperator)         \
    X(OperatorMult,        20, LEFT,  MultOperator)          \
@@ -939,7 +976,8 @@ enum OperatorKind
 enum Associativity
 {
    LEFT,
-   RIGHT
+   RIGHT,
+   NONE
 };
    
 
@@ -953,17 +991,20 @@ struct Operator
 
 struct Operator token_to_operator(enum TokenKind token_kind)
 {
-   #define X(operator_type, precedence, associativity, token) \
-   if(token_kind == token) {                                  \
-      return (struct Operator)                                \
-      {                                                       \
-       .operator = operator_type,                             \
-       .precedence = precedence,                              \
-       .associativity = associativity                         \
-      }                                                       \
-   }                                                          
+   #define X(operator_type, precedence_level, operator_associativity, token)  \
+   if(token_kind == token)                                                    \
+   {                                                                          \
+      return (struct Operator)                                                \
+      {                                                                       \
+       .operator      = operator_type,                                        \
+       .precedence    = precedence_level,                                     \
+       .associativity = operator_associativity                                \
+      };                                                                      \
+   };                                                             
    OPERATORS
    #undef X
+
+   ASSERT("no execution path leads here" && false);
 }
 
 char*
