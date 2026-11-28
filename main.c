@@ -1058,7 +1058,8 @@ struct Node
 {
    enum NodeKind kind;
 
-   union {
+   union
+   {
       struct NodeScope        node_scope;
       struct NodeVariableBind node_variable_bind;
       struct NodeBinary       node_binary;
@@ -1142,8 +1143,6 @@ parser_assert_one_of(struct Parser* self, enum TokenKind expected_kind)
       abort();
    }
 }
-
-
 
 bool
 parser_accept(struct Parser* self, enum TokenKind expected_kind)
