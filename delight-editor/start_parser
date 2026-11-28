@@ -1,3 +1,7 @@
+int score = 123;
+
+\\ magic compiler blockade
+
 int score = 123 * 1 * 2 + 2 * 6;
 
 int score_two = 123 * 1 * 2 + 2 * 6;

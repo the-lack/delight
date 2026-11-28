@@ -1184,10 +1184,29 @@ parser_parse_expression(struct Parser* self)
 
             expr_node->data.node_unary.child = int_node;
          }
+         else
+         {
+
+            parser_assert(self, IntegerLiteral);
+            expr_node = node_create();
+            expr_node->kind = NodeInteger;
+            expr_node->data.node_integer.token_ptr = self->current_token;
+            parser_advance(self);            
+         }
       }
+      else
+      {
+         parser_assert(self, IntegerLiteral);
+         expr_node = node_create();
+         expr_node->kind = NodeInteger;
+         expr_node->data.node_integer.token_ptr = self->current_token;
+         parser_advance(self);
+      }
+
+      return expr_node;
    }
    // for()
-   return NULL;
+   // return NULL;
 }
 
 struct Node*
