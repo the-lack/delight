@@ -937,7 +937,7 @@ lexer_lex(struct Lexer* self)
         X(NodeScope)         \
         X(NodeVariableBind)  \
         X(NodeInteger)       \
-        X(NodeInfix)         \
+        X(NodeUnary)         \
         X(NodeBinary)
 
 enum NodeKind
@@ -1021,13 +1021,11 @@ struct Node;
 
 struct NodeScope
 {
-   enum NodeKind  kind;
    struct vector* nodes_ptr;
 };
 
 struct NodeVariableBind
 {
-   enum NodeKind kind;
    struct Token* identifier_ptr;
    struct Token* type_ptr;
    struct Node* value_expr_ptr;
@@ -1035,22 +1033,19 @@ struct NodeVariableBind
 
 struct NodeBinary
 {
-   enum NodeKind kind;
    struct Token* token_ptr;
    struct Node*  left;
    struct Node*  right;
 };
 
-struct NodeInfix
+struct NodeUnary
 {
-   enum NodeKind kind;
    struct Token* token_ptr;
    struct Node*  child;
 };
 
 struct NodeInteger
 {
-   enum NodeKind kind;
    struct Token* token_ptr;
 };
 
@@ -1063,7 +1058,7 @@ struct Node
       struct NodeScope        node_scope;
       struct NodeVariableBind node_variable_bind;
       struct NodeBinary       node_binary;
-      struct NodeInfix        node_infix;
+      struct NodeUnary        node_unary;
       struct NodeInteger      node_integer;
    } data;
 };
@@ -1168,7 +1163,29 @@ parser_accept(struct Parser* self, enum TokenKind expected_kind)
 struct Node*
 parser_parse_expression(struct Parser* self)
 {
+   for(size_t i = 0; i < self->tokens->element_count; i++)
+   {
+      struct Node* expr_node = NULL;
 
+      if(i == 0)
+      {
+         if(parser_accept(self, MinusOperator) || parser_accept(self, PlusOperator))
+         {
+            expr_node            = node_create();
+            expr_node->kind      = NodeUnary;
+            expr_node->data.node_unary.token_ptr = self->current_token;
+            parser_advance(self);
+
+            parser_assert(self, IntegerLiteral);
+            struct Node* int_node = node_create();
+            int_node->kind = NodeInteger;
+            int_node->data.node_integer.token_ptr = self->current_token;
+            parser_advance(self);
+
+            expr_node->data.node_unary.child = int_node;
+         }
+      }
+   }
    // for()
    return NULL;
 }
